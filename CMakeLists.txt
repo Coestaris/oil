@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.13)
+project(oil C)
+
+set(CMAKE_C_STANDARD 11)
+
+add_executable(oil main.c)
+
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
+include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
+
+target_link_libraries(oil m)
+target_link_libraries(oil ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
+
