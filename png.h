@@ -89,9 +89,24 @@ typedef struct {
 
 } pngimage;
 
+typedef struct {
+    uint8_t compMethod;
+    uint8_t compInfo;
+
+    uint8_t fLevel;
+    uint8_t fDict;
+    uint8_t fCheck;
+
+    uint32_t dict;
+
+} zlib_header;
+
 pngimage* oilCreateImg(void);
 char* oilGetChunkName(pngchunk* chunk);
 int oilProceedChunk(pngimage* image, pngchunk* chunk);
 int oilGetChunks(char* fileName);
+
+zlib_header* getZlibHeader(uint8_t* data, size_t* offset);
+int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length);
 
 #endif //OIL_PNG_H

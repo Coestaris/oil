@@ -83,7 +83,7 @@ int oilGetChunks(char* fileName)
 
         if(~crc != chunk->crc) {
 
-            oilPushErrorf("Chunks crcs doesn't match. Expected %i, but got %i", chunk->crc, crc);
+            oilPushErrorf("Chunks crcs doesn't match. Expected %X, but got %X", (uint32_t)chunk->crc, (uint32_t)crc);
             free(chunk->data);
             free(chunk);
             free(img);
@@ -211,7 +211,10 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
         }
     }
     else if(memcmp(&chunk->type, png_chunk_IDAT, sizeof(chunk->type)) == 0) {
-
+        if(!oilProceedIDAT(image, chunk->data, chunk->length)) {
+            oilPushError("Unable to decompress IDAT chunk =c\n");
+            return 0;
+        }
     }
 
     else
@@ -222,3 +225,52 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
 
     return 1;
 }
+
+zlib_header* getZlibHeader(uint8_t* data, size_t* offset)
+{
+    zlib_header* header = malloc(sizeof(zlib_header));
+
+    header->compMethod = (uint8_t)(data[0] & 0b00001111);
+    header->compInfo =   (uint8_t)(data[0] & 0b11110000) >> 4;
+
+    if(header->compMethod != 8) {
+        oilPushErrorf("%i is unknown compMethod, it can be only 8\n", header->compMethod);
+        return NULL;
+    }
+
+    header->fCheck = (uint8_t)(data[1] & 0b00011111);
+    header->fDict  = (uint8_t)(data[1] & 0b00100000) >> 5;
+    header->fLevel = (uint8_t)(data[1] & 0b11000000) >> 6;
+
+    if( ((data[0] << 8) | data[1]) % 31 != 0 ) {
+        oilPushErrorf("fCheck error. Expected %i %% 31 to be equal 0\n", ((data[0] << 8) | data[1]));
+        return NULL;
+    }
+
+    if(header->fDict) {
+        header->dict = buffToU32(data + 2);
+        *offset = 6;
+    } else {
+        *offset = 2;
+    }
+
+    return header;
+}
+
+int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length)
+{
+    for(size_t i = 0; i < length; i++) {
+        printf("%02X ", data[i]);
+    }
+    putchar('\n');
+
+    size_t offset = 0;
+    zlib_header* header = getZlibHeader(data, &offset);
+    if(header == NULL) {
+        oilPushError("Unable to parse ZLIb dict\n");
+        return 0;
+    }
+
+    return 1;
+}
+//63 F8 3F 93 E1 3F 03 C3 CC FF 20 1A C8 00 22 24 0E 58 12 85 33 D3 F8 3F 03 32 07 44 03 00 AA 05 23 77
