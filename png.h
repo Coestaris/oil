@@ -30,7 +30,8 @@ static uint8_t png_chunk_IDAT[4]  = { 0x49, 0x44, 0x41, 0x54 };
 static uint8_t png_chunk_tEXt[4]  = { 0x74, 0x45, 0x58, 0x74 };
 static uint8_t png_chunk_PLTE[4]  = { 0x50, 0x4C, 0x54, 0x45 };
 
-typedef struct {
+typedef struct
+{
     uint32_t length;
     uint32_t type;
     uint8_t* data;
@@ -38,7 +39,8 @@ typedef struct {
 
 } pngchunk;
 
-typedef struct {
+typedef struct
+{
     uint16_t greyScale;
 
     uint16_t r;
@@ -48,7 +50,8 @@ typedef struct {
 
 } png_color;
 
-typedef struct {
+typedef struct
+{
     uint8_t usePalette;
     uint8_t useColor;
     uint8_t hasAlpha;
@@ -75,7 +78,8 @@ typedef struct {
 
 } png_color_management;
 
-typedef struct {
+typedef struct
+{
     uint32_t width;
     uint32_t height;
     uint8_t bit_depth;
@@ -97,7 +101,8 @@ typedef struct {
 
 } pngimage;
 
-typedef struct {
+typedef struct
+{
     uint8_t compMethod;
     uint8_t compInfo;
 
