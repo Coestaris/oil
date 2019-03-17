@@ -193,7 +193,7 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
                 break;
 
             case 3:
-                image->color_management.bkgColor.paletteIndex = chunk->data[0];
+                image->color_management.bkgColor = image->color_management.palette[chunk->data[0]];
                 break;
 
             default:
@@ -215,10 +215,18 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
         }
     }
     else if(memcmp(&chunk->type, png_chunk_IDAT, sizeof(chunk->type)) == 0) {
-        printf("%i\n", chunk->length);
         if(!oilProceedIDAT(image, chunk->data, chunk->length)) {
             oilPushError("Unable to decompress IDAT chunk =c\n");
             return 0;
+        }
+    }
+    else if(memcmp(&chunk->type, png_chunk_PLTE, sizeof(chunk->type)) == 0) {
+        image->color_management.paletteLen = chunk->length / 3;
+        image->color_management.palette = malloc(sizeof(png_color) * image->color_management.paletteLen);
+        for(size_t i = 0; i < image->color_management.paletteLen; i++) {
+            image->color_management.palette[i].r = chunk->data[i * 3];
+            image->color_management.palette[i].g = chunk->data[i * 3 + 1];
+            image->color_management.palette[i].b = chunk->data[i * 3 + 2];
         }
     }
 
@@ -233,74 +241,78 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
 
 void printColor(png_color color, int flag)
 {
-    if(getPalette(flag)) {
-        if(getAlpha(flag)) {
-            printf("Palette(%i, %i)", color.paletteIndex, color.a);
+    if(getAlpha(flag)) {
+        if (getColor(flag)) {
+            printf("RGBA(%.2X, %.2X, %.2X, %.2X)", color.r, color.g, color.b, color.a);
         } else {
-            printf("Palette(%i)", color.paletteIndex);
+            printf("Grayscale(%i, %i)", color.greyScale, color.a);
         }
     } else {
-
-        if(getAlpha(flag)) {
-            if (getColor(flag)) {
-                printf("RGBA(%i, %i, %i, %i)", color.r, color.g, color.b, color.a);
-            } else {
-                printf("Grayscale(%i, %i)", color.greyScale, color.a);
-            }
+        if (getColor(flag)) {
+            printf("RGB(%i, %i, %i)", color.r, color.g, color.b);
         } else {
-            if (getColor(flag)) {
-                printf("RGB(%i, %i, %i)", color.r, color.g, color.b);
-            } else {
-                printf("Grayscale(%i)", color.greyScale);
-            }
+            printf("Grayscale(%i)", color.greyScale);
         }
     }
 }
 
-void pushColor(pngimage* img, png_color color)
+void pushColor(pngimage* image, png_color color)
 {
-
+    printColor(color, image->colorFlag);
+    putchar('\n');
 }
 
-void getColorNone(pngimage* image, int* byteCounter, uint8_t* data)
+#define getByte data[(*byteCounter)++]
+
+void getColorDefault(pngimage* image, size_t * byteCounter, uint8_t* data)
 {
-    if(image->color_management.usePalette)
+    for(size_t i = 0; i < image->width; i++)
     {
-        if(image->color_management.hasAlpha)
+        png_color color;
+
+        if(image->color_management.usePalette)
         {
-            if(image->bit_depth == 16)
+            color = image->color_management.palette[getByte << 8 | getByte];
+        }
+        else
+        {
+            if(image->color_management.useColor)
             {
-                for (int i = 0; i < image->width; i++)
+                if(image->bit_depth == 16)
                 {
-                    png_color color = image->color_management.palette[data[(*byteCounter)++]];
-                    color.a = data[(*byteCounter)++] << 8 | data[(*byteCounter)++];
-                    pushColor(image, color);
+                    color.r = getByte << 8 | getByte;
+                    color.g = getByte << 8 | getByte;
+                    color.b = getByte << 8 | getByte;
+                }
+                else
+                {
+                    color.r = getByte;
+                    color.g = getByte;
+                    color.b = getByte;
                 }
             }
             else
             {
-                for (int i = 0; i < image->width; i++)
+                if(image->bit_depth == 16)
                 {
-                    png_color color = image->color_management.palette[data[(*byteCounter)++]];
-                    color.a = data[(*byteCounter)++];
-                    pushColor(image, color);
+                    color.greyScale = getByte << 8 | getByte;
+                }
+                else
+                {
+                    color.greyScale = getByte;
                 }
             }
         }
-        else
-        {
-            for (int i = 0; i < image->width; i++)
-            {
-                pushColor(image, image->color_management.palette[data[(*byteCounter)++]]);
+
+        if(image->color_management.hasAlpha) {
+            if(image->bit_depth == 16) {
+                color.a = getByte << 8 | getByte;
+            } else {
+                color.a = getByte;
             }
         }
-    }
-    else
-    {
-        if(image->color_management.useColor)
-        {
-            
-        }
+
+        pushColor(image, color);
     }
 }
 
@@ -311,7 +323,7 @@ int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length)
     }
     putchar('\n');
 
-    size_t outputLen = 4 * image->width * image->height * image->bit_depth / 8;
+    size_t outputLen = 67;//5 * image->width * image->height * image->bit_depth / 8 - 3;
     uint8_t* output = malloc(outputLen);
     memset(output, 0, outputLen);
 
@@ -342,22 +354,32 @@ int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length)
     }
     putchar('\n');
 
-    int byteCounter = 0;
-    for(int i = 0; i < image->height; i++) {
+    size_t byteCounter = 0;
+    for(size_t i = 0; i < image->height; i++)
+    {
         int filtType = output[byteCounter++];
-        printf("Scanline %i, filtType: %i\n", i, filtType);
+        printf("==Scanline %li, filtType: %i\n", i, filtType);
         switch (filtType) {
-            case 0: {
+            case 0:
                 //None
-                png_color color = pushColor(image, &byteCounter, output);
-                printColor(color, image->colorFlag);
-                putchar('\n');
-
-            }
+                getColorDefault(image, &byteCounter, output);
                 break;
 
             case 1:
                 //Sub
+
+                for(size_t component = 1; component < image->width; component++)
+                {
+                    for(size_t byte = 0; byte < 4; byte++)
+                    {
+                        output[byteCounter + component * 4 + byte] =
+                                output[byteCounter + component * 4 + byte] +
+                                output[byteCounter + (component - 1) * 4 + byte];
+                    }
+                }
+                getColorDefault(image, &byteCounter, output);
+                break;
+
             case 2:
                 //Up
             case 3:
