@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <zlib.h>
 
 #include "oilerror.h"
 #include "crc32.h"
@@ -42,8 +43,7 @@ typedef struct {
     uint16_t r;
     uint16_t g;
     uint16_t b;
-
-    uint8_t paletteIndex;
+    uint8_t a;
 
 } png_color;
 
@@ -66,7 +66,11 @@ typedef struct {
     uint32_t blueY;
 
     uint8_t bkgColorSet;
+
     png_color bkgColor;
+
+    size_t paletteLen;
+    png_color* palette;
 
 } png_color_management;
 
@@ -87,6 +91,9 @@ typedef struct {
     size_t chunksCount;
     pngchunk** chunks;
 
+    uint8_t* data;
+    size_t dataLen;
+
 } pngimage;
 
 typedef struct {
@@ -106,7 +113,6 @@ char* oilGetChunkName(pngchunk* chunk);
 int oilProceedChunk(pngimage* image, pngchunk* chunk);
 int oilGetChunks(char* fileName);
 
-zlib_header* getZlibHeader(uint8_t* data, size_t* offset);
 int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length);
 
 #endif //OIL_PNG_H

@@ -10,5 +10,6 @@ find_package(GLUT REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
 
 target_link_libraries(oil m)
+target_link_libraries(oil z)
 target_link_libraries(oil ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 

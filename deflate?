@@ -1,0 +1,151 @@
+/*
+
+zlib_header* getZlibHeader(uint8_t* data, size_t* offset)
+{
+    zlib_header* header = malloc(sizeof(zlib_header));
+
+    header->compMethod = (uint8_t)(data[0] & 0b00001111);
+    header->compInfo =   (uint8_t)(data[0] & 0b11110000) >> 4;
+
+    if(header->compMethod != 8) {
+        oilPushErrorf("%i is unknown compMethod, it can be only 8\n", header->compMethod);
+        return NULL;
+    }
+
+    header->fCheck = (uint8_t)(data[1] & 0b00011111);
+    header->fDict  = (uint8_t)(data[1] & 0b00100000) >> 5;
+    header->fLevel = (uint8_t)(data[1] & 0b11000000) >> 6;
+
+    if( ((data[0] << 8) | data[1]) % 31 != 0 ) {
+        oilPushErrorf("fCheck error. Expected %i %% 31 to be equal 0\n", ((data[0] << 8) | data[1]));
+        return NULL;
+    }
+
+    if(header->fDict) {
+        header->dict = buffToU32(data + 2);
+        *offset = 6;
+    } else {
+        *offset = 2;
+    }
+
+    return header;
+}
+
+void pushToOuputStream(uint8_t byte)
+{
+    printf("%i ", byte);
+}
+
+#define getBit(data, bitOffset) (uint8_t)((data[bitOffset / 8] >> (bitOffset++ % 8)) & 0x1)
+#define get2Bits(data, bitOffset) getBit(data, bitOffset) << 1 | getBit(data, bitOffset)
+
+uint32_t getNBits(uint8_t* data, size_t* bitOffset, uint8_t n)
+{
+    uint32_t result = 0;
+    for(int i = 0; i < n; i++) {
+        result |= getBit(data, *bitOffset) << i;
+        bitOffset++;
+    }
+}
+
+typedef struct {
+    int lowValue;
+    int highValue;
+    int bits;
+    int base;
+
+} fixedHuffmanTableItem;
+
+int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length) {
+
+    fixedHuffmanTableItem items[] =
+    {
+        {0,   143, 8, 0b00110000 },
+        {144, 255, 9, 0b110010000},
+        {256, 279, 7, 0b0000000  },
+        {280, 287, 8, 0b11000000 },
+    };
+
+    //uint8_t* encodedData = data;
+*/
+/*    uint8_t encodedData[] = {
+            0x08, 0xD7, 0x4D, 0xC7, 0x41, 0x0D, 0x80, 0x40, 0x00, 0x04, 0xB1, 0x9E, 0x26, 0x44,
+            0xA1, 0x69, 0x45, 0xA1, 0x69, 0x78, 0x91, 0xD0, 0x5F, 0x35, 0xB1, 0x9A, 0x22, 0xFF,
+            0x34, 0x9D, 0x26, 0x37, 0xC6, 0x71, 0x39, 0xD1, 0x97, 0x3C, 0x5E, 0x12, 0xD8, 0x19,
+            0xED, 0xD9, 0xC4, 0xD0, 0xA4, 0x00
+    };*//*
+
+
+
+    for (size_t i = 0; i < length; i++) {
+        printf("%02X ", data[i]);
+    }
+
+
+    putchar('\n');
+
+    size_t offset = 0;
+    zlib_header *header = getZlibHeader(data, &offset);
+    if (header == NULL) {
+        oilPushError("Unable to parse ZLIb dict\n");
+        return 0;
+    }
+
+    uint8_t encodedData[] = {
+            0x63, 0xF8, 0x3F, 0x93, 0xE1, 0x3F, 0x03, 0xC3, 0xCC, 0xFF,
+            0x20, 0x1A, 0xC8, 0x00, 0x22, 0x24, 0x0E, 0x58, 0x12, 0x85,
+            0x33, 0xD3, 0xF8, 0x3F, 0x03, 0x32, 0x07, 0x44, 0x03, 0x00,
+            0xAA, 0x05, 0x23, 0x77
+    };
+
+    */
+/*uint8_t encodedData[] = {
+            0x15, 0x8d, 0x51, 0x0a, 0xc0, 0x20, 0x0c, 0x43, 0xff, 0x3d, 0x45, 0xae, 0x56, 0x67, 0xdd, 0x8a, 0x5d, 0x0b,
+            0xd5, 0x21, 0xde, 0x7e, 0x0a, 0xf9, 0x08, 0x21, 0x2f, 0xc9, 0x4a, 0x57, 0xcb, 0x12, 0x05, 0x5d, 0xec, 0xde,
+            0x82, 0x18, 0xc6, 0xc3, 0x28, 0x4c, 0x05, 0x5e, 0x61, 0x72, 0x3f, 0x23, 0x0d, 0x6a, 0x7c, 0xe2, 0xce, 0xc8,
+            0xe1, 0x8d, 0x0d, 0x73, 0x77, 0x3b, 0xc8, 0x0a, 0x94, 0x29, 0x36, 0xe3, 0xa8, 0xba, 0x12, 0xa9, 0x62, 0xf9,
+            0x17, 0x50, 0xa9, 0x9c, 0xb6, 0xc3, 0xe4, 0x60, 0xb8, 0xe9, 0xc2, 0x24, 0x19, 0xe7, 0xa1, 0x7a, 0xec, 0x2d,
+            0xe9, 0x78, 0xfd, 0x65, 0x1b, 0x07, 0xa5, 0x90, 0xce, 0xe9, 0x07
+    };*//*
+
+
+
+    length = sizeof(encodedData);
+
+    uint8_t lastBlock = 0;
+    uint8_t mode = 0;
+    size_t bitOffset = 0;
+
+    do {
+        lastBlock = getBit(encodedData, bitOffset);
+        mode = get2Bits(encodedData, bitOffset);
+
+        //0b00 - Stored without compression
+        //0b01 - Stored with dynamic huffman codes
+        //0b10 - Stored with static huffman codes
+        //0b11 - Error
+
+        if(mode == 0b11) {
+            oilPushError("Wrong mode in deflate block header");
+            return 0;
+        }
+
+        int litValue = getNBits(data, 7);
+
+        */
+/*if(mode == 0b00) {
+
+        } else {
+
+            if(mode == 0b01) {
+            }
+        }
+        *//*
+
+
+
+    } while (!lastBlock);
+
+    return 1;
+}
+//63 F8 3F 93 E1 3F 03 C3 CC FF 20 1A C8 00 22 24 0E 58 12 85 33 D3 F8 3F 03 32 07 44 03 00 AA 05 23 77*/

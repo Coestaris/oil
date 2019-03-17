@@ -133,6 +133,10 @@ char* oilGetChunkName(pngchunk* chunk)
     return str;
 }
 
+#define getPalette(byte) (uint8_t)((byte & 0b00000001) != 0)
+#define getColor(byte) (uint8_t)((byte & 0b00000010) != 0)
+#define getAlpha(byte) (uint8_t)((byte & 0b00000100) != 0)
+
 int oilProceedChunk(pngimage* image, pngchunk* chunk)
 {
     char* name = oilGetChunkName(chunk);
@@ -144,9 +148,9 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
         image->width = buffToU32(chunk->data + 4);
         image->bit_depth = chunk->data[8];
 
-        image->color_management.usePalette = (uint8_t)((chunk->data[9] & 0b00000001) != 0);
-        image->color_management.useColor = (uint8_t)((chunk->data[9] & 0b00000010) != 0);
-        image->color_management.hasAlpha = (uint8_t)((chunk->data[9] & 0b00000100) != 0);
+        image->color_management.usePalette = getPalette(chunk->data[9]);
+        image->color_management.useColor = getColor(chunk->data[9]);
+        image->color_management.hasAlpha = getAlpha(chunk->data[9]);
         image->colorFlag = chunk->data[9];
 
         image->compression = chunk->data[10];
@@ -211,6 +215,7 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
         }
     }
     else if(memcmp(&chunk->type, png_chunk_IDAT, sizeof(chunk->type)) == 0) {
+        printf("%i\n", chunk->length);
         if(!oilProceedIDAT(image, chunk->data, chunk->length)) {
             oilPushError("Unable to decompress IDAT chunk =c\n");
             return 0;
@@ -226,51 +231,149 @@ int oilProceedChunk(pngimage* image, pngchunk* chunk)
     return 1;
 }
 
-zlib_header* getZlibHeader(uint8_t* data, size_t* offset)
+void printColor(png_color color, int flag)
 {
-    zlib_header* header = malloc(sizeof(zlib_header));
-
-    header->compMethod = (uint8_t)(data[0] & 0b00001111);
-    header->compInfo =   (uint8_t)(data[0] & 0b11110000) >> 4;
-
-    if(header->compMethod != 8) {
-        oilPushErrorf("%i is unknown compMethod, it can be only 8\n", header->compMethod);
-        return NULL;
-    }
-
-    header->fCheck = (uint8_t)(data[1] & 0b00011111);
-    header->fDict  = (uint8_t)(data[1] & 0b00100000) >> 5;
-    header->fLevel = (uint8_t)(data[1] & 0b11000000) >> 6;
-
-    if( ((data[0] << 8) | data[1]) % 31 != 0 ) {
-        oilPushErrorf("fCheck error. Expected %i %% 31 to be equal 0\n", ((data[0] << 8) | data[1]));
-        return NULL;
-    }
-
-    if(header->fDict) {
-        header->dict = buffToU32(data + 2);
-        *offset = 6;
+    if(getPalette(flag)) {
+        if(getAlpha(flag)) {
+            printf("Palette(%i, %i)", color.paletteIndex, color.a);
+        } else {
+            printf("Palette(%i)", color.paletteIndex);
+        }
     } else {
-        *offset = 2;
-    }
 
-    return header;
+        if(getAlpha(flag)) {
+            if (getColor(flag)) {
+                printf("RGBA(%i, %i, %i, %i)", color.r, color.g, color.b, color.a);
+            } else {
+                printf("Grayscale(%i, %i)", color.greyScale, color.a);
+            }
+        } else {
+            if (getColor(flag)) {
+                printf("RGB(%i, %i, %i)", color.r, color.g, color.b);
+            } else {
+                printf("Grayscale(%i)", color.greyScale);
+            }
+        }
+    }
+}
+
+void pushColor(pngimage* img, png_color color)
+{
+
+}
+
+void getColorNone(pngimage* image, int* byteCounter, uint8_t* data)
+{
+    if(image->color_management.usePalette)
+    {
+        if(image->color_management.hasAlpha)
+        {
+            if(image->bit_depth == 16)
+            {
+                for (int i = 0; i < image->width; i++)
+                {
+                    png_color color = image->color_management.palette[data[(*byteCounter)++]];
+                    color.a = data[(*byteCounter)++] << 8 | data[(*byteCounter)++];
+                    pushColor(image, color);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < image->width; i++)
+                {
+                    png_color color = image->color_management.palette[data[(*byteCounter)++]];
+                    color.a = data[(*byteCounter)++];
+                    pushColor(image, color);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < image->width; i++)
+            {
+                pushColor(image, image->color_management.palette[data[(*byteCounter)++]]);
+            }
+        }
+    }
+    else
+    {
+        if(image->color_management.useColor)
+        {
+            
+        }
+    }
 }
 
 int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length)
 {
-    for(size_t i = 0; i < length; i++) {
-        printf("%02X ", data[i]);
+    for(int i = 0; i < length; i++) {
+        printf("%.2X ", data[i]);
     }
     putchar('\n');
 
-    size_t offset = 0;
-    zlib_header* header = getZlibHeader(data, &offset);
-    if(header == NULL) {
-        oilPushError("Unable to parse ZLIb dict\n");
+    size_t outputLen = 4 * image->width * image->height * image->bit_depth / 8;
+    uint8_t* output = malloc(outputLen);
+    memset(output, 0, outputLen);
+
+    z_stream infstream;
+    infstream.zalloc = Z_NULL;
+    infstream.zfree = Z_NULL;
+    infstream.opaque = Z_NULL;
+
+    infstream.avail_in = (uInt)  length; // size of input
+    infstream.next_in = (Bytef*) data; // input char array
+    infstream.avail_out = (uInt)outputLen; // size of output
+    infstream.next_out = (Bytef*) output; // output char array
+
+
+    inflateInit(&infstream);
+    int result;
+
+    if((result = inflate(&infstream, Z_NO_FLUSH)) != Z_OK) {
+        puts(zError(result));
+        oilPushError("Unable to decompress data");
         return 0;
     }
 
+    inflateEnd(&infstream);
+
+    for(int i = 0; i < outputLen; i++) {
+        printf("%.2X ", output[i]);
+    }
+    putchar('\n');
+
+    int byteCounter = 0;
+    for(int i = 0; i < image->height; i++) {
+        int filtType = output[byteCounter++];
+        printf("Scanline %i, filtType: %i\n", i, filtType);
+        switch (filtType) {
+            case 0: {
+                //None
+                png_color color = pushColor(image, &byteCounter, output);
+                printColor(color, image->colorFlag);
+                putchar('\n');
+
+            }
+                break;
+
+            case 1:
+                //Sub
+            case 2:
+                //Up
+            case 3:
+                //Average
+            case 4:
+                //Paeth
+            default:
+                oilPushErrorf("%i is unknown filter type\n", filtType);
+                return 0;
+        }
+    }
+
+    image->dataLen = outputLen;
+    image->data = output;
+
+    putchar('\n');
+
     return 1;
 }
-//63 F8 3F 93 E1 3F 03 C3 CC FF 20 1A C8 00 22 24 0E 58 12 85 33 D3 F8 3F 03 32 07 44 03 00 AA 05 23 77
