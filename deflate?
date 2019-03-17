@@ -56,7 +56,7 @@ typedef struct {
 
 } fixedHuffmanTableItem;
 
-int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length) {
+int oilProceedIDAT(pngImage* image, uint8_t * data, size_t length) {
 
     fixedHuffmanTableItem items[] =
     {

@@ -18,7 +18,7 @@ static uint8_t png_signature[8] = {
     0x50, 0x4E, 0x47, //"PNG"
     0x0D, 0x0A,       //CRLF
     0x1A,             // end-of-file symbol
-    0x0A             // LF
+    0x0A              // LF
 };
 
 static uint8_t png_chunk_end[4]   = { 0x49, 0x45, 0x4E, 0x44 };
@@ -37,7 +37,14 @@ typedef struct
     uint8_t* data;
     uint32_t crc;
 
-} pngchunk;
+} pngChunk;
+
+typedef struct
+{
+    char* key;
+    char* value;
+
+} pngText;
 
 typedef struct
 {
@@ -48,7 +55,7 @@ typedef struct
     uint16_t b;
     uint8_t a;
 
-} png_color;
+} pngColor;
 
 typedef struct
 {
@@ -71,37 +78,34 @@ typedef struct
 
     uint8_t bkgColorSet;
 
-    png_color bkgColor;
+    pngColor bkgColor;
 
     size_t paletteLen;
-    png_color* palette;
+    pngColor* palette;
 
-} png_color_management;
+} pngPixelData;
 
 typedef struct
 {
     uint32_t width;
     uint32_t height;
-    uint8_t bit_depth;
+    uint8_t bitDepth;
 
-    png_color_management color_management;
+    pngPixelData* pixelData;
     uint8_t colorFlag;
 
     uint8_t compression;
     uint8_t filtration;
     uint8_t interlace;
 
-    char* text;
+    int txtItemsCount;
+    pngText* txtItems;
 
-    size_t chunksCount;
-    pngchunk** chunks;
+    pngColor** colors;
 
-    uint8_t* data;
-    size_t dataLen;
+} pngImage;
 
-} pngimage;
-
-typedef struct
+/*typedef struct
 {
     uint8_t compMethod;
     uint8_t compInfo;
@@ -112,13 +116,22 @@ typedef struct
 
     uint32_t dict;
 
-} zlib_header;
+} zlib_header;*/
 
-pngimage* oilCreateImg(void);
-char* oilGetChunkName(pngchunk* chunk);
-int oilProceedChunk(pngimage* image, pngchunk* chunk);
-int oilGetChunks(char* fileName);
+pngImage* oilCreateImg(void);
+char* oilGetChunkName(pngChunk* chunk);
+int oilProceedChunk(pngImage* image, pngChunk* chunk);
+int oilLoadImage(char *fileName, pngImage *image);
+pngImage* oilLoad(char *fileName);
 
-int oilProceedIDAT(pngimage* image, uint8_t * data, size_t length);
+void oilFreeImage(pngImage* image);
+void oilGetImageData(pngImage* image, int format);
+
+void oilColorMatrixFree(pngImage* image);
+void oilColorMatrixCreate();
+
+void printColor(pngColor color, int flag);
+void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data);
+int oilProceedIDAT(pngImage* image, uint8_t * data, size_t length);
 
 #endif //OIL_PNG_H

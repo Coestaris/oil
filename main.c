@@ -4,9 +4,9 @@
 
 int main(int argc, char** argv)
 {
-    int result = oilGetChunks("img.png");
-
-    if(!result) {
+    pngImage* image;
+    if(!(image = oilLoad("img.png")))
+    {
         oilPrintError();
         exit(EXIT_FAILURE);
     }
