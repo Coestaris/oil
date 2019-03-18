@@ -13,15 +13,15 @@
 #include "oilerror.h"
 #include "crc32.h"
 
-//#define OILDEBUG_PRINT_CHUNK_NAMES
-//#define OILDEBUG_PRINT_COMPRESSED_DATA
-//#define OILDEBUG_PRINT_DECOMPRESSED_DATA
-//#define OILDEBUG_PRINT_SCANLINES
+#define OILDEBUG_PRINT_CHUNK_NAMES
+#define OILDEBUG_PRINT_COMPRESSED_DATA
+#define OILDEBUG_PRINT_DECOMPRESSED_DATA
+#define OILDEBUG_PRINT_SCANLINES
 
 static uint8_t png_signature[8] = {
-    0x89,             //Non ASCII symbol
-    0x50, 0x4E, 0x47, //"PNG"
-    0x0D, 0x0A,       //CRLF
+    0x89,             // Non ASCII symbol
+    0x50, 0x4E, 0x47, // "PNG"
+    0x0D, 0x0A,       // CRLF
     0x1A,             // end-of-file symbol
     0x0A              // LF
 };
@@ -34,6 +34,17 @@ static uint8_t png_chunk_bKGD[4]  = { 0x62, 0x4B, 0x47, 0x44 };
 static uint8_t png_chunk_IDAT[4]  = { 0x49, 0x44, 0x41, 0x54 };
 static uint8_t png_chunk_tEXt[4]  = { 0x74, 0x45, 0x58, 0x74 };
 static uint8_t png_chunk_PLTE[4]  = { 0x50, 0x4C, 0x54, 0x45 };
+
+#define png_filterType_none    0
+#define png_filterType_sub     1
+#define png_filterType_up      2
+#define png_filterType_average 3
+#define png_filterType_paeth   4
+
+#define png_get_next_byte data[(*byteCounter)++]
+#define png_colorflag_palette(byte) (uint8_t)((byte & 0b00000001) != 0)
+#define png_colorflag_color(byte) (uint8_t)((byte & 0b00000010) != 0)
+#define png_colorflag_alpha(byte) (uint8_t)((byte & 0b00000100) != 0)
 
 typedef struct
 {
@@ -96,7 +107,7 @@ typedef struct
     uint32_t height;
     uint8_t bitDepth;
 
-    pngPixelData* pixelData;
+    pngPixelData* pixelsInfo;
     uint8_t colorFlag;
 
     uint8_t compression;
@@ -123,20 +134,8 @@ typedef struct
 
 } zlib_header;*/
 
-pngImage* oilCreateImg(void);
-char* oilGetChunkName(pngChunk* chunk);
-int oilProceedChunk(pngImage* image, pngChunk* chunk);
-int oilLoadImage(char *fileName, pngImage** image);
 pngImage* oilLoad(char *fileName);
-
 void oilFreeImage(pngImage* image);
-void oilGetImageData(pngImage* image, int format);
-
-void oilColorMatrixFree(pngImage* image);
-void oilColorMatrixAlloc(pngImage* image, uint8_t allocColors);
-
-void printColor(pngColor* color, uint32_t flag, uint8_t hex);
-void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t scanlineIndex);
-int oilProceedIDAT(pngImage* image, uint8_t * data, size_t length);
+void oilPrintColor(pngColor *color, uint32_t flag, uint8_t hex);
 
 #endif //OIL_PNG_H
