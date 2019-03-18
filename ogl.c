@@ -247,7 +247,7 @@ GLuint oilGetTexture(pngImageData* data)
 GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat)
 {
     pngImage* image;
-    if(!(image = oilLoad(filename)))
+    if(!(image = oilLoad(filename, 1)))
     {
         oilPushError("[OILERROR]: Unable to load image");
         return 0;

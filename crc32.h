@@ -5,9 +5,8 @@
 #ifndef OIL_CRC32_H
 #define OIL_CRC32_H
 
-#include <stdint-gcc.h>
-#include <glob.h>
-
+#include <stdint.h>
+#include <stdlib.h>
 
 static const uint32_t crc_32_tab[] = {
         0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
@@ -56,6 +55,6 @@ static const uint32_t crc_32_tab[] = {
 };
 
 uint32_t CRC32(uint8_t* buff, size_t buffLen, uint32_t init);
-inline uint32_t updateCRC32(uint8_t ch, uint32_t crc);
+uint32_t updateCRC32(uint8_t ch, uint32_t crc);
 
 #endif //OIL_CRC32_H

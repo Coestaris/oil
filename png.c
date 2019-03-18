@@ -25,6 +25,8 @@ pngImage *oilCreateImg(void)
     pngImage *img = malloc(sizeof(pngImage));
     img->pixelsInfo = malloc(sizeof(pngPixelData));
     img->pixelsInfo->bkgColorSet = 0;
+    img->pixelsInfo->ppuY = 0;
+    img->pixelsInfo->ppuX = 0;
     img->pixelsInfo->cieSet = 0;
     img->pixelsInfo->gammaSet = 0;
     img->txtItems = NULL;
@@ -227,7 +229,7 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     return 1;
 }
 
-int oilProceedChunk(pngImage *image, pngChunk *chunk)
+int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
 {
 #ifdef OILDEBUG_PRINT_CHUNK_NAMES
     char *name = oilGetChunkName(chunk);
@@ -235,7 +237,9 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
     free(name);
 #endif
 
-    if (memcmp(&chunk->type, png_chunk_start, sizeof(chunk->type)) == 0)
+    int ancillary = ((chunk->type >> 24) & 0b00010000);
+
+    if (chunk->type == png_chunk_IHDR)
     {
         image->width = buffToU32(chunk->data);
         image->height = buffToU32(chunk->data + 4);
@@ -250,67 +254,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
         image->filtration = chunk->data[11];
         image->interlace = chunk->data[12];
     }
-    else if (memcmp(&chunk->type, png_chunk_gAMA, sizeof(chunk->type)) == 0)
-    {
-        image->pixelsInfo->gammaSet = 1;
-        image->pixelsInfo->gamma = buffToU32(chunk->data);
-    }
-    else if (memcmp(&chunk->type, png_chunk_cHRM, sizeof(chunk->type)) == 0)
-    {
-        image->pixelsInfo->cieSet = 1;
-        image->pixelsInfo->whitePointX = buffToU32(chunk->data);
-        image->pixelsInfo->whitePointY = buffToU32(chunk->data + 4);
-        image->pixelsInfo->redX = buffToU32(chunk->data + 8);
-        image->pixelsInfo->redY = buffToU32(chunk->data + 16);
-        image->pixelsInfo->greenX = buffToU32(chunk->data + 20);
-        image->pixelsInfo->greenY = buffToU32(chunk->data + 24);
-        image->pixelsInfo->blueX = buffToU32(chunk->data + 28);
-        image->pixelsInfo->blueY = buffToU32(chunk->data + 32);
-    }
-    else if (memcmp(&chunk->type, png_chunk_bKGD, sizeof(chunk->type)) == 0)
-    {
-
-        image->pixelsInfo->bkgColorSet = 1;
-        switch (image->colorFlag)
-        {
-            case 0:
-            case 4:
-                image->pixelsInfo->bkgColor.greyScale = buffToU16(chunk->data);
-                break;
-
-            case 2:
-            case 6:
-                image->pixelsInfo->bkgColor.r = buffToU16(chunk->data);
-                image->pixelsInfo->bkgColor.g = buffToU16(chunk->data + 2);
-                image->pixelsInfo->bkgColor.b = buffToU16(chunk->data + 4);
-                break;
-
-            case 3:
-                image->pixelsInfo->bkgColor = image->pixelsInfo->palette[chunk->data[0]];
-                break;
-
-            default:
-                oilPushErrorf("[OILERROR]: % is unknown colorFlag\n", image->colorFlag);
-                return 0;
-        }
-
-    }
-    else if (memcmp(&chunk->type, png_chunk_tEXt, sizeof(chunk->type)) == 0)
-    {
-
-        /*   if (image->text == NULL)
-           {
-               image->text = malloc(chunk->length + 1);
-               memcpy(image->text, chunk->data, chunk->length);
-               image->text[chunk->length] = '\0';
-           }
-           else
-           {
-               image->text = realloc(image->text, strlen(image->text) + chunk->length + 2);
-               image->text = strcat(strcat(image->text, "\1"), (const char *) chunk->data);
-           }*/
-    }
-    else if (memcmp(&chunk->type, png_chunk_IDAT, sizeof(chunk->type)) == 0)
+    else if (chunk->type == png_chunk_IDAT)
     {
         if (!oilProceedIDAT(image, chunk->data, chunk->length))
         {
@@ -318,7 +262,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
             return 0;
         }
     }
-    else if (memcmp(&chunk->type, png_chunk_PLTE, sizeof(chunk->type)) == 0)
+    else if (chunk->type == png_chunk_PLTE)
     {
         image->pixelsInfo->paletteLen = chunk->length / 3;
         image->pixelsInfo->palette = malloc(sizeof(pngColor) * image->pixelsInfo->paletteLen);
@@ -329,18 +273,94 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
             image->pixelsInfo->palette[i].b = chunk->data[i * 3 + 2];
         }
     }
-    else
+    else if(!simplified)
     {
-        char* chunkName = oilGetChunkName(chunk);
-        oilPushErrorf("[OILERROR]: %i (or %s) is unknown chunk type\n", chunk->type, chunkName);
-        free(chunkName);
-        return 0;
+        if (chunk->type == png_chunk_gAMA)
+        {
+            image->pixelsInfo->gammaSet = 1;
+            image->pixelsInfo->gamma = buffToU32(chunk->data);
+        }
+        else if (chunk->type == png_chunk_cHRM)
+        {
+            image->pixelsInfo->cieSet = 1;
+            image->pixelsInfo->whitePointX = buffToU32(chunk->data);
+            image->pixelsInfo->whitePointY = buffToU32(chunk->data + 4);
+            image->pixelsInfo->redX = buffToU32(chunk->data + 8);
+            image->pixelsInfo->redY = buffToU32(chunk->data + 16);
+            image->pixelsInfo->greenX = buffToU32(chunk->data + 20);
+            image->pixelsInfo->greenY = buffToU32(chunk->data + 24);
+            image->pixelsInfo->blueX = buffToU32(chunk->data + 28);
+            image->pixelsInfo->blueY = buffToU32(chunk->data + 32);
+        }
+        else if (chunk->type == png_chunk_bKGD)
+        {
+
+            image->pixelsInfo->bkgColorSet = 1;
+            switch (image->colorFlag)
+            {
+                case 0:
+                case 4:
+                    image->pixelsInfo->bkgColor.greyScale = buffToU16(chunk->data);
+                    break;
+
+                case 2:
+                case 6:
+                    image->pixelsInfo->bkgColor.r = buffToU16(chunk->data);
+                    image->pixelsInfo->bkgColor.g = buffToU16(chunk->data + 2);
+                    image->pixelsInfo->bkgColor.b = buffToU16(chunk->data + 4);
+                    break;
+
+                case 3:
+                    image->pixelsInfo->bkgColor = image->pixelsInfo->palette[chunk->data[0]];
+                    break;
+
+                default:
+                    oilPushErrorf("[OILERROR]: % is unknown colorFlag\n", image->colorFlag);
+                    return 0;
+            }
+
+        }
+        else if (chunk->type == png_chunk_tEXt)
+        {
+
+            /*   if (image->text == NULL)
+               {
+                   image->text = malloc(chunk->length + 1);
+                   memcpy(image->text, chunk->data, chunk->length);
+                   image->text[chunk->length] = '\0';
+               }
+               else
+               {
+                   image->text = realloc(image->text, strlen(image->text) + chunk->length + 2);
+                   image->text = strcat(strcat(image->text, "\1"), (const char *) chunk->data);
+               }*/
+        }
+        else if (chunk->type == png_chunk_pHYs)
+        {
+            image->pixelsInfo->ppuX = buffToU32(chunk->data);
+            image->pixelsInfo->ppuY = buffToU32(chunk->data + 4);
+            if(chunk->data[8] != 1)
+            {
+                oilPushErrorf("[OILERROR]: %i is unknown unit\n", chunk->data[8]);
+                return 0;
+            }
+        }
+        else
+        {
+            if(!ancillary)
+            {
+                char *chunkName = oilGetChunkName(chunk);
+                oilPushErrorf("[OILERROR]: %i (or %s) is unknown chunk type\n", chunk->type, chunkName);
+                free(chunkName);
+                return 0;
+            }
+        }
     }
 
     return 1;
 }
 
-int oilLoadImage(char *fileName, pngImage** image)
+int oilLoadImage(char *fileName, pngImage** image, int simplified)
 {
     FILE *f = fopen(fileName, "rb");
 
@@ -420,12 +440,12 @@ int oilLoadImage(char *fileName, pngImage** image)
             return 0;
         }
 
-        if (memcmp(&chunk->type, png_chunk_end, sizeof(chunk->type)) == 0)
+        if (chunk->type == png_chunk_IEND)
         {
             break;
         }
 
-        if (!oilProceedChunk(*image, chunk))
+        if (!oilProceedChunk(*image, chunk, simplified))
         {
             oilPushError("[OILERROR]: Unable to proceed chunk\n");
             free(chunk->data);
@@ -446,10 +466,10 @@ int oilLoadImage(char *fileName, pngImage** image)
     return 1;
 }
 
-pngImage* oilLoad(char *fileName)
+pngImage* oilLoad(char *fileName, int simplified)
 {
     pngImage* img = NULL;
-    if(!oilLoadImage(fileName, &img)) {
+    if(!oilLoadImage(fileName, &img, simplified)) {
         return NULL;
     } else {
         return img;
