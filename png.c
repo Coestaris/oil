@@ -28,20 +28,20 @@ uint16_t buffToU16(const uint8_t *buff)
 pngImage* oilLoad(char *fileName)
 {
     pngImage* img = NULL;
-    if(!oilLoadImage(fileName, img)) {
+    if(!oilLoadImage(fileName, &img)) {
         return NULL;
     } else {
         return img;
     }
 }
 
-int oilLoadImage(char *fileName, pngImage *image)
+int oilLoadImage(char *fileName, pngImage** image)
 {
     FILE *f = fopen(fileName, "rb");
 
     if (!f)
     {
-        oilPushErrorf("Unable to open file \"%s\"", fileName);
+        oilPushErrorf("[OILERROR]: Unable to open file \"%s\"\n", fileName);
         return 0;
     }
 
@@ -49,24 +49,24 @@ int oilLoadImage(char *fileName, pngImage *image)
     uint8_t signBuffer[sizeof(png_signature)];
     if (fread(signBuffer, sizeof(signBuffer), 1, f) != 1)
     {
-        oilPushErrorf("Unable to read PNG file signature at position %i", ftell(f));
+        oilPushErrorf("[OILERROR]: Unable to read PNG file signature at position %i\n", ftell(f));
     }
 
     if (memcmp(signBuffer, png_signature, sizeof(png_signature)) != 0)
     {
-        oilPushError("PNG file signature doesn't match");
+        oilPushError("[OILERROR]: PNG file signature doesn't match\n");
         return 0;
     }
 
     pngChunk *chunk = malloc(sizeof(pngChunk));
-    image = oilCreateImg();
+    *image = oilCreateImg();
 
     while (1)
     {
 
         if (fread(buff4, sizeof(buff4), 1, f) != 1)
         {
-            oilPushErrorf("Unable to read chunk length at position %i", ftell(f));
+            oilPushErrorf("[OILERROR]: Unable to read chunk length at position %i\n", ftell(f));
             free(chunk);
             return 0;
         }
@@ -74,9 +74,9 @@ int oilLoadImage(char *fileName, pngImage *image)
 
         if (fread(&chunk->type, sizeof(chunk->type), 1, f) != 1)
         {
-            oilPushErrorf("Unable to read chunk type at position %i", ftell(f));
+            oilPushErrorf("[OILERROR]: Unable to read chunk type at position %i\n", ftell(f));
             free(chunk);
-            free(image);
+            oilFreeImage(*image);
             return 0;
         }
 
@@ -85,19 +85,19 @@ int oilLoadImage(char *fileName, pngImage *image)
             chunk->data = malloc(sizeof(uint8_t) * chunk->length);
             if (fread(chunk->data, sizeof(uint8_t) * chunk->length, 1, f) != 1)
             {
-                oilPushErrorf("Unable to read chunk data at position %i", ftell(f));
+                oilPushErrorf("[OILERROR]: Unable to read chunk data at position %i\n", ftell(f));
                 free(chunk->data);
                 free(chunk);
-                free(image);
+                oilFreeImage(*image);
                 return 0;
             }
         }
 
         if (fread(buff4, sizeof(buff4), 1, f) != 1)
         {
-            oilPushErrorf("Unable to read chunk crc at position %i", ftell(f));
+            oilPushErrorf("[OILERROR]: Unable to read chunk crc at position %i\n", ftell(f));
             free(chunk);
-            free(image);
+            oilFreeImage(*image);
             return 0;
         }
         chunk->crc = buffToU32(buff4);
@@ -108,10 +108,10 @@ int oilLoadImage(char *fileName, pngImage *image)
         if (~crc != chunk->crc)
         {
 
-            oilPushErrorf("Chunks crcs doesn't match. Expected %X, but got %X", (uint32_t) chunk->crc, (uint32_t) crc);
+            oilPushErrorf("[OILERROR]: Chunks crcs doesn't match. Expected %X, but got %X\n", (uint32_t) chunk->crc, (uint32_t) crc);
             free(chunk->data);
             free(chunk);
-            free(image);
+            oilFreeImage(*image);
             return 0;
         }
 
@@ -120,12 +120,12 @@ int oilLoadImage(char *fileName, pngImage *image)
             break;
         }
 
-        if (!oilProceedChunk(image, chunk))
+        if (!oilProceedChunk(*image, chunk))
         {
-            oilPushError("Unable to proceed chunk");
+            oilPushError("[OILERROR]: Unable to proceed chunk\n");
             free(chunk->data);
             free(chunk);
-            free(image);
+            oilFreeImage(*image);
             return 0;
         }
     }
@@ -134,7 +134,7 @@ int oilLoadImage(char *fileName, pngImage *image)
 
     if (fclose(f))
     {
-        oilPushError("Unable to close file");
+        oilPushError("[OILERROR]: Unable to close file");
         return 0;
     }
 
@@ -149,6 +149,7 @@ pngImage *oilCreateImg(void)
     img->pixelData->cieSet = 0;
     img->pixelData->gammaSet = 0;
     img->txtItems = NULL;
+    img->colors = NULL;
     return img;
 }
 
@@ -165,9 +166,11 @@ char *oilGetChunkName(pngChunk *chunk)
 
 int oilProceedChunk(pngImage *image, pngChunk *chunk)
 {
+#ifdef OILDEBUG_PRINT_CHUNK_NAMES
     char *name = oilGetChunkName(chunk);
-    puts(name);
+    printf("[OILDEBUG]: Reading chunk with type: %s\n", name);
     free(name);
+#endif
 
     if (memcmp(&chunk->type, png_chunk_start, sizeof(chunk->type)) == 0)
     {
@@ -225,7 +228,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
                 break;
 
             default:
-                oilPushError("Unknown colorFlag\n");
+                oilPushErrorf("[OILERROR]: % is unknown colorFlag\n", image->colorFlag);
                 return 0;
         }
 
@@ -233,7 +236,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
     else if (memcmp(&chunk->type, png_chunk_tEXt, sizeof(chunk->type)) == 0)
     {
 
-        if (image->text == NULL)
+     /*   if (image->text == NULL)
         {
             image->text = malloc(chunk->length + 1);
             memcpy(image->text, chunk->data, chunk->length);
@@ -243,13 +246,13 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
         {
             image->text = realloc(image->text, strlen(image->text) + chunk->length + 2);
             image->text = strcat(strcat(image->text, "\1"), (const char *) chunk->data);
-        }
+        }*/
     }
     else if (memcmp(&chunk->type, png_chunk_IDAT, sizeof(chunk->type)) == 0)
     {
         if (!oilProceedIDAT(image, chunk->data, chunk->length))
         {
-            oilPushError("Unable to decompress IDAT chunk =c\n");
+            oilPushError("[OILERROR]: Unable to decompress IDAT chunk\n");
             return 0;
         }
     }
@@ -266,21 +269,40 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk)
     }
     else
     {
-        oilPushError("Unknown chunk type =c\n");
+        char* chunkName = oilGetChunkName(chunk);
+        oilPushErrorf("[OILERROR]: %i (or %s) is unknown chunk type\n", chunk->type, chunkName);
+        free(chunkName);
         return 0;
     }
 
     return 1;
 }
 
-void oilColorMatrixFree(pngImage* image)
+void oilColorMatrixAlloc(pngImage* image, uint8_t allocColors)
 {
-
+    image->colors = malloc(sizeof(pngColor**) * image->height);
+    for(uint32_t i = 0; i < image->height; i++)
+    {
+        image->colors[i] = malloc((sizeof(pngColor*) * image->width));
+        if(allocColors)
+        {
+            for (uint32_t j = 0; j < image->height; j++)
+            {
+                image->colors[i][j] = malloc(sizeof(pngColor));
+            }
+        }
+    }
 }
 
-void oilColorMatrixCreate()
+void oilColorMatrixFree(pngImage* image)
 {
-
+    for(uint32_t i = 0; i < image->height; i++)
+    {
+        for(uint32_t j = 0; j < image->height; j++)
+            free(image->colors[i][j]);
+        free(image->colors[i]);
+    }
+    free(image->colors);
 }
 
 void oilFreeImage(pngImage* image)
@@ -291,47 +313,53 @@ void oilFreeImage(pngImage* image)
     free(image);
 }
 
-void printColor(pngColor color, int flag)
+void printColor(pngColor* color, uint32_t flag, uint8_t hex)
 {
     if (colorFlagGetAlpha(flag))
     {
         if (colorFlagGetColor(flag))
         {
-            printf("RGBA(%.2X, %.2X, %.2X, %.2X)", color.r, color.g, color.b, color.a);
+            if(hex)
+                printf("RGBA(%.2X, %.2X, %.2X, %.2X)", color->r, color->g, color->b, color->a);
+            else
+                printf("RGBA(%.3i, %.3i, %.3i, %.3i)", color->r, color->g, color->b, color->a);
         }
         else
         {
-            printf("Grayscale(%i, %i)", color.greyScale, color.a);
+            if(hex)
+                printf("Grayscale(%.2X, %.2X)", color->greyScale, color->a);
+            else
+                printf("Grayscale(%.3i, %.3i)", color->greyScale, color->a);
         }
     }
     else
     {
         if (colorFlagGetColor(flag))
         {
-            printf("RGB(%i, %i, %i)", color.r, color.g, color.b);
+            if(hex)
+                printf("RGB(%.2X, %.2X, %.2X)", color->r, color->g, color->b);
+            else
+                printf("RGB(%.3i, %.3i, %.3i)", color->r, color->g, color->b);
         }
         else
         {
-            printf("Grayscale(%i)", color.greyScale);
+            if(hex)
+                printf("Grayscale(%.2X)", color->greyScale);
+            else
+                printf("Grayscale(%.3i)", color->greyScale);
         }
     }
 }
 
-void pushColor(pngImage *image, pngColor color)
-{
-    printColor(color, image->colorFlag);
-    putchar('\n');
-}
-
-void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data)
+void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t scanlineIndex)
 {
     for (size_t i = 0; i < image->width; i++)
     {
-        pngColor color;
+        pngColor* color = image->colors[scanlineIndex][i];
 
         if (image->pixelData->usePalette)
         {
-            color = image->pixelData->palette[getColorDefaultGetByte << 8 | getColorDefaultGetByte];
+            color = &image->pixelData->palette[getColorDefaultGetByte << 8 | getColorDefaultGetByte];
         }
         else
         {
@@ -339,26 +367,26 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data)
             {
                 if (image->bitDepth == 16)
                 {
-                    color.r = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
-                    color.g = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
-                    color.b = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
+                    color->r = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
+                    color->g = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
+                    color->b = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
                 }
                 else
                 {
-                    color.r = getColorDefaultGetByte;
-                    color.g = getColorDefaultGetByte;
-                    color.b = getColorDefaultGetByte;
+                    color->r = getColorDefaultGetByte;
+                    color->g = getColorDefaultGetByte;
+                    color->b = getColorDefaultGetByte;
                 }
             }
             else
             {
                 if (image->bitDepth == 16)
                 {
-                    color.greyScale = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
+                    color->greyScale = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
                 }
                 else
                 {
-                    color.greyScale = getColorDefaultGetByte;
+                    color->greyScale = getColorDefaultGetByte;
                 }
             }
         }
@@ -367,26 +395,29 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data)
         {
             if (image->bitDepth == 16)
             {
-                color.a = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
+                color->a = getColorDefaultGetByte << 8 | getColorDefaultGetByte;
             }
             else
             {
-                color.a = getColorDefaultGetByte;
+                color->a = getColorDefaultGetByte;
             }
         }
 
-        pushColor(image, color);
+        image->colors[scanlineIndex][i] = color;
     }
 }
 
 int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
 {
-    /*
+
+#ifdef OILDEBUG_PRINT_COMPRESSED_DATA
+    puts("[OILDEBUG]: Compressed image data:");
     for(int i = 0; i < length; i++) {
         printf("%.2X ", data[i]);
+        if((i + 1) % 30 == 0) putchar('\n');
     }
     putchar('\n');
-    */
+#endif
 
     uint8_t bytesPerColor = 0;
     if (image->pixelData->usePalette)
@@ -429,29 +460,37 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     {
         free(output);
         puts(zError(result));
-        oilPushError("Unable to decompress data");
+        oilPushError("[OILERROR]: Unable to decompress data\n");
         return 0;
     }
 
     inflateEnd(&infstream);
 
-    /*
+#ifdef OILDEBUG_PRINT_DECOMPRESSED_DATA
+    puts("[OILDEBUG]: Decompressed image data:");
     for(int i = 0; i < outputLen; i++) {
         printf("%.2X ", output[i]);
+        if((i + 1) % 30 == 0) putchar('\n');
     }
     putchar('\n');
-     */
+#endif
+
+    oilColorMatrixAlloc(image, 1);
 
     size_t byteCounter = 0;
     for (size_t i = 0; i < image->height; i++)
     {
         int filtType = output[byteCounter++];
-        printf("==Scanline %li, filtType: %i\n", i, filtType);
+
+#ifdef OILDEBUG_PRINT_SCANLINES
+        printf("[OILDEBUG]: Reading scanline #%li, filtType: %i\n", i, filtType);
+#endif
+
         switch (filtType)
         {
             case 0:
                 //None
-                getImageColors(image, &byteCounter, output);
+                getImageColors(image, &byteCounter, output, i);
                 break;
 
             case 1:
@@ -466,7 +505,7 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
                                 output[byteCounter + (component - 1) * bytesPerColor + byte];
                     }
                 }
-                getImageColors(image, &byteCounter, output);
+                getImageColors(image, &byteCounter, output, i);
                 break;
 
             case 2:
@@ -477,7 +516,7 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
                 //Paeth
             default:
                 free(output);
-                oilPushErrorf("%i is unknown filter type\n", filtType);
+                oilPushErrorf("[OILERROR]: %i is unknown filter type\n", filtType);
                 return 0;
         }
     }

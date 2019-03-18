@@ -13,6 +13,11 @@
 #include "oilerror.h"
 #include "crc32.h"
 
+//#define OILDEBUG_PRINT_CHUNK_NAMES
+//#define OILDEBUG_PRINT_COMPRESSED_DATA
+//#define OILDEBUG_PRINT_DECOMPRESSED_DATA
+//#define OILDEBUG_PRINT_SCANLINES
+
 static uint8_t png_signature[8] = {
     0x89,             //Non ASCII symbol
     0x50, 0x4E, 0x47, //"PNG"
@@ -101,7 +106,7 @@ typedef struct
     int txtItemsCount;
     pngText* txtItems;
 
-    pngColor** colors;
+    pngColor*** colors;
 
 } pngImage;
 
@@ -121,17 +126,17 @@ typedef struct
 pngImage* oilCreateImg(void);
 char* oilGetChunkName(pngChunk* chunk);
 int oilProceedChunk(pngImage* image, pngChunk* chunk);
-int oilLoadImage(char *fileName, pngImage *image);
+int oilLoadImage(char *fileName, pngImage** image);
 pngImage* oilLoad(char *fileName);
 
 void oilFreeImage(pngImage* image);
 void oilGetImageData(pngImage* image, int format);
 
 void oilColorMatrixFree(pngImage* image);
-void oilColorMatrixCreate();
+void oilColorMatrixAlloc(pngImage* image, uint8_t allocColors);
 
-void printColor(pngColor color, int flag);
-void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data);
+void printColor(pngColor* color, uint32_t flag, uint8_t hex);
+void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t scanlineIndex);
 int oilProceedIDAT(pngImage* image, uint8_t * data, size_t length);
 
 #endif //OIL_PNG_H
