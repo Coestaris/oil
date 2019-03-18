@@ -12,21 +12,22 @@
 #include "png.h"
 
 typedef struct {
-    pngImage* srcImage;
+    colorMatrix* srcMatrix;
     uint8_t* data;
     size_t dataLen;
 
     uint32_t componentFormat;
     uint32_t dataFormat;
 
-} pngImageData;
+} imageData;
 
 #define GL_AUTO -1
 
 GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat);
 
-GLuint oilGetTexture(pngImageData* img);
-pngImageData* oilGetImageData(pngImage* img, uint32_t componentFormat, uint32_t dataFormat);
-void oilFreeImageData(pngImageData* data);
+GLuint oilGetTexture(imageData* img);
+void oilFreeImageData(imageData* data);
+
+imageData* oilGetPNGImageData(pngImage *img, uint32_t componentFormat, uint32_t dataFormat);
 
 #endif //OIL_OGL_H

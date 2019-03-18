@@ -10,8 +10,11 @@
 #include <stdio.h>
 #include <zlib.h>
 
+#include "common.h"
 #include "oilerror.h"
 #include "crc32.h"
+
+#define OIL_DONT_IGNORE_CHUNKS
 
 #define OILDEBUG_PRINT_CHUNK_NAMES
 #define OILDEBUG_PRINT_COMPRESSED_DATA
@@ -27,14 +30,15 @@ static uint8_t png_signature[8] = {
 };
 
 static uint32_t png_chunk_IEND = 0x444E4549; //[4] = { 0x49, 0x45, 0x4E, 0x44 };
-static uint32_t png_chunk_IHDR = 0X49484452; //[4] = { 0x49, 0x48, 0x44, 0x52 };
+static uint32_t png_chunk_IHDR = 0X52444849; //[4] = { 0x49, 0x48, 0x44, 0x52 };
 static uint32_t png_chunk_gAMA = 0x414D4167; //[4] = { 0x67, 0x41, 0x4D, 0x41 };
 static uint32_t png_chunk_cHRM = 0x4D524863; //[4] = { 0x63, 0x48, 0x52, 0x4D };
-static uint32_t png_chunk_bKGD = 0x44474B42; //[4] = { 0x62, 0x4B, 0x47, 0x44 };
+static uint32_t png_chunk_bKGD = 0x44474B62; //[4] = { 0x62, 0x4B, 0x47, 0x44 };
 static uint32_t png_chunk_IDAT = 0x54414449; //[4] = { 0x49, 0x44, 0x41, 0x54 };
 static uint32_t png_chunk_tEXt = 0x74584574; //[4] = { 0x74, 0x45, 0x58, 0x74 };
 static uint32_t png_chunk_PLTE = 0x45544C50; //[4] = { 0x50, 0x4C, 0x54, 0x45 };
 static uint32_t png_chunk_pHYs = 0x73594870; //[4] = { 0x70, 0x48, 0x59, 0x73 };
+static uint32_t png_chunk_tIME = 0x454D4974; //[4] = { 0x74, 0x49, 0x4D, 0x45 };
 
 #define png_filterType_none    0
 #define png_filterType_sub     1
@@ -43,9 +47,9 @@ static uint32_t png_chunk_pHYs = 0x73594870; //[4] = { 0x70, 0x48, 0x59, 0x73 };
 #define png_filterType_paeth   4
 
 #define png_get_next_byte data[(*byteCounter)++]
-#define png_colorflag_palette(byte)  (uint8_t)((byte & 0b00000001) != 0)
-#define png_colorflag_color(  byte)  (uint8_t)((byte & 0b00000010) != 0)
-#define png_colorflag_alpha(  byte)  (uint8_t)((byte & 0b00000100) != 0)
+#define png_colorflag_palette(byte) (uint8_t)((byte & 0b00000001) != 0)
+#define png_colorflag_color(byte)   (uint8_t)((byte & 0b00000010) != 0)
+#define png_colorflag_alpha(byte)   (uint8_t)((byte & 0b00000100) != 0)
 
 typedef struct
 {
@@ -62,17 +66,6 @@ typedef struct
     char* value;
 
 } pngText;
-
-typedef struct
-{
-    uint16_t greyScale;
-
-    uint16_t r;
-    uint16_t g;
-    uint16_t b;
-    uint8_t a;
-
-} pngColor;
 
 typedef struct
 {
@@ -121,7 +114,7 @@ typedef struct
     int txtItemsCount;
     pngText* txtItems;
 
-    pngColor*** colors;
+    colorMatrix* colorMatrix;
 
 } pngImage;
 
@@ -138,8 +131,8 @@ typedef struct
 
 } zlib_header;*/
 
-pngImage* oilLoad(char *fileName, int simplified);
-void oilFreeImage(pngImage* image);
-void oilPrintColor(pngColor *color, uint32_t flag, uint8_t hex);
+pngImage* oilPNGLoad(char *fileName, int simplified);
+void oilPNGFreeImage(pngImage *image);
 
 #endif //OIL_PNG_H
+

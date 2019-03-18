@@ -70,7 +70,7 @@ void writeColor(uint8_t* data, size_t* byteCounter, pngColor* color, uint32_t co
     }
 }
 
-pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_t dataFormat)
+imageData* oilGetPNGImageData(pngImage *img, uint32_t componentFormat, uint32_t dataFormat)
 {
     /* Allowed componentFormats
      * - GL_RED,
@@ -107,26 +107,26 @@ pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_
         return NULL;
     }
 
-    pngImageData* data = malloc(sizeof(pngImageData));
-    data->srcImage = image;
+    imageData* data = malloc(sizeof(imageData));
+    data->srcMatrix = img->colorMatrix;
     data->componentFormat = componentFormat;
     data->dataFormat = dataFormat;
 
     if(componentFormat == GL_AUTO)
     {
-        if(!image->pixelsInfo->useColor) {
+        if(!img->pixelsInfo->useColor) {
             componentFormat = GL_RED;
         }
         else
         {
-            if (image->pixelsInfo->hasAlpha) componentFormat = GL_RGBA;
+            if (img->pixelsInfo->hasAlpha) componentFormat = GL_RGBA;
             else componentFormat = GL_RGB;
         }
     }
 
     if(dataFormat == GL_AUTO)
     {
-        switch(image->bitDepth)
+        switch(img->bitDepth)
         {
             case 1:
             case 2:
@@ -183,26 +183,26 @@ pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_
             break;
     }
 
-    data->dataLen = bytesPerPixel * image->width * image->height;
+    data->dataLen = bytesPerPixel * img->width * img->height;
     data->data = malloc(sizeof(uint8_t) * data->dataLen);
 
     size_t byteCounter = 0;
-    for (uint32_t y = 0; y < image->height; y++) {
-        for (uint32_t x = 0; x < image->width; x++) {
-            writeColor(data->data, &byteCounter, image->colors[y][x], componentFormat, dataFormat);
+    for (uint32_t y = 0; y < img->height; y++) {
+        for (uint32_t x = 0; x < img->width; x++) {
+            writeColor(data->data, &byteCounter, img->colorMatrix->matrix[y][x], componentFormat, dataFormat);
         }
     }
 
     return data;
 }
 
-void oilFreeImageData(pngImageData* data)
+void oilFreeImageData(imageData* data)
 {
     free(data->data);
     free(data);
 }
 
-GLuint oilGetTexture(pngImageData* data)
+GLuint oilGetTexture(imageData* data)
 {
     GLenum error;
     GLuint id = 0;
@@ -224,8 +224,8 @@ GLuint oilGetTexture(pngImageData* data)
     glTexImage2D(GL_TEXTURE_2D,
             0,
             data->componentFormat,
-            data->srcImage->width,
-            data->srcImage->height,
+            data->srcMatrix->width,
+            data->srcMatrix->height,
             0,
             data->componentFormat,
             data->dataFormat,
@@ -247,17 +247,17 @@ GLuint oilGetTexture(pngImageData* data)
 GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat)
 {
     pngImage* image;
-    if(!(image = oilLoad(filename, 1)))
+    if(!(image = oilPNGLoad(filename, 1)))
     {
         oilPushError("[OILERROR]: Unable to load image");
         return 0;
     }
 
-    pngImageData* data = oilGetImageData(image, componentFormat, dataFormat);
+    imageData* data = oilGetPNGImageData(image, componentFormat, dataFormat);
     if(data == NULL)
     {
         oilPushError("[OILERROR]: Unable to get image data");
-        oilFreeImage(image);
+        oilPNGFreeImage(image);
         return 0;
     }
 
@@ -266,12 +266,12 @@ GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dat
     {
         oilPushError("[OILERROR]: Unable to generate texture");
         oilFreeImageData(data);
-        oilFreeImage(image);
+        oilPNGFreeImage(image);
         return 0;
     }
 
     oilFreeImageData(data);
-    oilFreeImage(image);
+    oilPNGFreeImage(image);
 
     return tex;
 }
