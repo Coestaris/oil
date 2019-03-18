@@ -7,5 +7,6 @@
 
 #include "oilerror.h"
 #include "png.h"
+#include "ogl.h"
 
 #endif //OIL_OIL_H

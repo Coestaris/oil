@@ -12,6 +12,7 @@
 #include "png.h"
 
 typedef struct {
+    pngImage* srcImage;
     uint8_t* data;
     size_t dataLen;
 
@@ -21,6 +22,8 @@ typedef struct {
 } pngImageData;
 
 #define GL_AUTO -1
+
+GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat);
 
 GLuint oilGetTexture(pngImageData* img);
 pngImageData* oilGetImageData(pngImage* img, uint32_t componentFormat, uint32_t dataFormat);

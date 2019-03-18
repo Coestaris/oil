@@ -13,10 +13,10 @@
 #include "oilerror.h"
 #include "crc32.h"
 
-#define OILDEBUG_PRINT_CHUNK_NAMES
-#define OILDEBUG_PRINT_COMPRESSED_DATA
-#define OILDEBUG_PRINT_DECOMPRESSED_DATA
-#define OILDEBUG_PRINT_SCANLINES
+//#define OILDEBUG_PRINT_CHUNK_NAMES
+//#define OILDEBUG_PRINT_COMPRESSED_DATA
+//#define OILDEBUG_PRINT_DECOMPRESSED_DATA
+//#define OILDEBUG_PRINT_SCANLINES
 
 static uint8_t png_signature[8] = {
     0x89,             // Non ASCII symbol

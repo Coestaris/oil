@@ -95,7 +95,7 @@ pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_
        componentFormat != GL_BGR && componentFormat != GL_BGRA && componentFormat != GL_RGBA &&
        componentFormat != GL_AUTO)
     {
-        oilPushError("[OILERROR]: Unknown component format");
+        oilPushError("[OILERROR]: Unknown component format\n");
         return NULL;
     }
 
@@ -103,11 +103,12 @@ pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_
        dataFormat != GL_SHORT && dataFormat != GL_UNSIGNED_INT && dataFormat != GL_INT &&
        dataFormat != GL_AUTO)
     {
-        oilPushError("[OILERROR]: Unknown data format");
+        oilPushError("[OILERROR]: Unknown data format\n");
         return NULL;
     }
 
     pngImageData* data = malloc(sizeof(pngImageData));
+    data->srcImage = image;
     data->componentFormat = componentFormat;
     data->dataFormat = dataFormat;
 
@@ -137,7 +138,7 @@ pngImageData* oilGetImageData(pngImage* image, uint32_t componentFormat, uint32_
                 dataFormat = GL_UNSIGNED_SHORT;
                 break;
             default:
-                oilPushError("[OILERROR]: When using GL_AUTO bitdepth must be valid value");
+                oilPushError("[OILERROR]: When using GL_AUTO bitdepth must be valid value\n");
                 free(data);
                 return NULL;
         }
@@ -203,5 +204,74 @@ void oilFreeImageData(pngImageData* data)
 
 GLuint oilGetTexture(pngImageData* data)
 {
+    GLenum error;
+    GLuint id = 0;
 
+    glGenTextures(1, &id);
+    if((error = glGetError()) != GL_NO_ERROR || id == 0)
+    {
+        oilPushErrorf("[OILERROR]: Unable to generate texture. Gl error: %s (errno %i)\n", gluErrorString(error), error);
+        return 0;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, id);
+    if((error = glGetError()) != GL_NO_ERROR)
+    {
+        oilPushErrorf("[OILERROR]: Unable to bind texture. Gl error: %s (errno %i)\n", gluErrorString(error), error);
+        return 0;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D,
+            0,
+            data->componentFormat,
+            data->srcImage->width,
+            data->srcImage->height,
+            0,
+            data->componentFormat,
+            data->dataFormat,
+            data->data);
+    if((error = glGetError()) != GL_NO_ERROR)
+    {
+        oilPushErrorf("[OILERROR]: Unable fill texture with data. Gl error: %s (errno %i)\n", gluErrorString(error), error);
+        return 0;
+    }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return 1;
+}
+
+GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat)
+{
+    pngImage* image;
+    if(!(image = oilLoad(filename)))
+    {
+        oilPushError("[OILERROR]: Unable to load image");
+        return 0;
+    }
+
+    pngImageData* data = oilGetImageData(image, componentFormat, dataFormat);
+    if(data == NULL)
+    {
+        oilPushError("[OILERROR]: Unable to get image data");
+        oilFreeImage(image);
+        return 0;
+    }
+
+    GLuint tex = oilGetTexture(data);
+    if(tex == 0)
+    {
+        oilPushError("[OILERROR]: Unable to generate texture");
+        oilFreeImageData(data);
+        oilFreeImage(image);
+        return 0;
+    }
+
+    oilFreeImageData(data);
+    oilFreeImage(image);
+
+    return tex;
 }
