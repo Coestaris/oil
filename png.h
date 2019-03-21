@@ -88,10 +88,10 @@ typedef struct
 
     uint8_t bkgColorSet;
 
-    pngColor bkgColor;
+    oilColor bkgColor;
 
     size_t paletteLen;
-    pngColor* palette;
+    oilColor* palette;
 
     uint32_t ppuX;
     uint32_t ppuY;

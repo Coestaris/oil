@@ -13,12 +13,12 @@ typedef struct
     uint16_t r;
     uint16_t g;
     uint16_t b;
-    uint8_t a;
+    uint16_t a;
 
-} pngColor;
+} oilColor;
 
 typedef struct {
-    pngColor*** matrix;
+    oilColor*** matrix;
     uint32_t width;
     uint32_t height;
 
@@ -26,6 +26,8 @@ typedef struct {
 
 colorMatrix* oilColorMatrixAlloc(uint8_t allocColors, uint32_t width, uint32_t height);
 void oilColorMatrixFree(colorMatrix* matrix);
-void oilPrintColor(pngColor *color, uint8_t hex);
+void oilPrintColor(oilColor *color, uint8_t hex);
+
+oilColor color(uint16_t r, uint16_t g, uint16_t b, uint16_t a);
 
 #endif //OIL_COMMON_H

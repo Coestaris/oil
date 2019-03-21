@@ -6,7 +6,7 @@
 #define OIL_OIL_H
 
 #include "oilerror.h"
-#include "ogl.h"
+#include "graphics.h"
 
 #include "png.h"
 #include "bmp.h"

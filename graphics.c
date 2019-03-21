@@ -2,7 +2,7 @@
 // Created by maxim on 3/18/19.
 //
 
-#include "ogl.h"
+#include "graphics.h"
 
 void writeComponent(uint8_t* data, size_t* byteCounter, uint32_t dataFormat, uint16_t component)
 {
@@ -29,7 +29,7 @@ void writeComponent(uint8_t* data, size_t* byteCounter, uint32_t dataFormat, uin
 
 #define wrComponent(comp) writeComponent(data, byteCounter, dataFormat, comp)
 
-void writeColor(uint8_t* data, size_t* byteCounter, pngColor* color, uint32_t componentFormat, uint32_t dataFormat)
+void writeColor(uint8_t* data, size_t* byteCounter, oilColor* color, uint32_t componentFormat, uint32_t dataFormat)
 {
     switch(componentFormat)
     {
@@ -274,4 +274,37 @@ GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dat
     oilPNGFreeImage(image);
 
     return tex;
+}
+
+void oilGrFill(colorMatrix* matrix, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+    assert(matrix != NULL);
+#endif
+
+    for(uint32_t i = 0; i < matrix->height; i++)
+        for(uint32_t j = 0; j < matrix->width; j++)
+            *matrix->matrix[i][j] = color;
+}
+
+void oilGrSetPixel(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+    assert(matrix != NULL);
+    assert(x < matrix->width - 1);
+    assert(y < matrix->height - 1);
+#endif
+
+    *matrix->matrix[y][x] = color;
+}
+
+oilColor oilGrGetPixel(colorMatrix* matrix, uint32_t x, uint32_t y)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+    assert(matrix != NULL);
+    assert(x < matrix->width);
+    assert(y < matrix->height);
+#endif
+
+    return *matrix->matrix[y][x];
 }

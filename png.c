@@ -50,11 +50,11 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
 {
     for (size_t i = 0; i < image->width; i++)
     {
-        pngColor* color = image->colorMatrix->matrix[scanlineIndex][i];
+        oilColor* color = image->colorMatrix->matrix[scanlineIndex][i];
 
         if (image->pixelsInfo->usePalette)
         {
-            color = &image->pixelsInfo->palette[png_get_next_byte << 8 | png_get_next_byte];
+            color = &image->pixelsInfo->palette[png_get_next_byte];
         }
         else
         {
@@ -155,6 +155,7 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     {
         free(output);
         oilPushErrorf("[OILERROR]: Unable to decompress data. ZLIB error: %s\n", zError(result));
+        inflateEnd(&infstream);
         return 0;
     }
 
@@ -253,7 +254,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
     else if (chunk->type == png_chunk_PLTE)
     {
         image->pixelsInfo->paletteLen = chunk->length / 3;
-        image->pixelsInfo->palette = malloc(sizeof(pngColor) * image->pixelsInfo->paletteLen);
+        image->pixelsInfo->palette = malloc(sizeof(oilColor) * image->pixelsInfo->paletteLen);
         for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
         {
             image->pixelsInfo->palette[i].r = chunk->data[i * 3];
