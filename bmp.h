@@ -7,12 +7,12 @@
 
 #include "common.h"
 
-static uint16_t bmp_signature_bm  = 0x424D; //Windows 3.1x, 95, NT, ... etc.
-static uint16_t bmp_signature_ba  = 0x4241; //OS/2 struct bitmap array
-static uint16_t bmp_signature_ci  = 0x434F; //OS/2 struct color icon
-static uint16_t bmp_signature_cp  = 0x4250; //OS/2 const color pointer
-static uint16_t bmp_signature_ic  = 0x4943; //OS/2 struct icon
-static uint16_t bmp_signature_ptb = 0x5054; //OS/2 pointer
+static uint16_t bmp_signature_bm  = 0x4D42; //Windows 3.1x, 95, NT, ... etc.
+static uint16_t bmp_signature_ba  = 0x4142; //OS/2 struct bitmap array
+static uint16_t bmp_signature_ci  = 0x4F43; //OS/2 struct color icon
+static uint16_t bmp_signature_cp  = 0x5042; //OS/2 const color pointer
+static uint16_t bmp_signature_ic  = 0x4349; //OS/2 struct icon
+static uint16_t bmp_signature_ptb = 0x5450; //OS/2 pointer
 
 static uint32_t bmp_compression_rgb             = 0;
 static uint32_t bmp_compression_rle8            = 1;

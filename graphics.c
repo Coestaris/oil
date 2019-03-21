@@ -291,8 +291,8 @@ void oilGrSetPixel(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
     assert(matrix != NULL);
-    assert(x < matrix->width - 1);
-    assert(y < matrix->height - 1);
+    assert(x < matrix->width);
+    assert(y < matrix->height);
 #endif
 
     *matrix->matrix[y][x] = color;
