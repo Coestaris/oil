@@ -52,3 +52,30 @@ oilColor color(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
     oilColor c = { r, g, b, a };
     return c;
 }
+
+colorMatrix* oilColorMatrixCopy(colorMatrix* src, colorMatrix* dest)
+{
+    if(!dest)
+    {
+        dest = oilColorMatrixAlloc(1, src->width, src->height);
+    } else
+    {
+        if(dest->height != src->height || dest->width != src->width) {
+            oilPushError("Sizes of color matrices should be equal");
+            return NULL;
+        }
+    }
+
+    /*memcpy(dest->matrix, dest->matrix,
+           sizeof(oilColor**) * sizeof(oilColor*) * dest->width * dest->height);*/
+
+    for(uint32_t x = 0; x < dest->width; x++)
+        for(uint32_t y = 0; y < dest->height; y++)
+        {
+            dest->matrix[y][x]->r = src->matrix[y][x]->r;
+            dest->matrix[y][x]->g = src->matrix[y][x]->g;
+            dest->matrix[y][x]->b = src->matrix[y][x]->b;
+            dest->matrix[y][x]->a = src->matrix[y][x]->a;
+        }
+    return dest;
+}

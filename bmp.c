@@ -8,9 +8,11 @@ bmpImage* allocImage()
 {
     bmpImage* image = malloc(sizeof(bmpImage));
     image->fileHeader = malloc(sizeof(bmpFileHeader));
+    image->fileHeader->reserved1 = 0;
+    image->fileHeader->reserved2 = 0;
     image->infoHeader = malloc(sizeof(bmpInfoHeader));
     image->infoHeader->headerSize = sizeof(bmpInfoHeader);
-    image->matrix = NULL;
+    image->colorMatrix = NULL;
     return image;
 }
 
@@ -29,7 +31,7 @@ bmpImage* oilBMPLoad(char* fileName)
 
 void oilBMPFreeImage(bmpImage* image)
 {
-    if(image->matrix) oilColorMatrixFree(image->matrix);
+    if(image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
     free(image->infoHeader);
     free(image->fileHeader);
     free(image);
@@ -39,11 +41,15 @@ bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
 {
     bmpImage* image = allocImage();
     image->fileHeader->signature = bmp_signature_bm;
-    image->fileHeader->offsetBytes = 0x36; //sizeof(bmpFileHeader) + sizeof(bmpInfoHeader);
-    image->infoHeader->imageSize = (width + height) * 3 * bitDepth / 24;
+
+    image->fileHeader->offsetBytes = sizeof(bmpFileHeader) + sizeof(bmpInfoHeader);
+
+    int toPad = (4 - (width * 3) % 4) % 4;
+    image->infoHeader->imageSize = (width * height) * 3 * bitDepth / 24 +
+            (width)* toPad;
 
     image->fileHeader->fileSize =
-            sizeof(bmpFileHeader) + sizeof(bmpInfoHeader) +
+            image->fileHeader->offsetBytes  +
             image->infoHeader->imageSize;
 
     image->infoHeader->height = height;
@@ -55,7 +61,10 @@ bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
     image->infoHeader->XpelsPerMeter = 2835;
     image->infoHeader->YpelsPerMeter = 2835;
 
-    image->matrix = oilColorMatrixAlloc(1, width, height);
+    image->infoHeader->colorsImportant = 0;
+    image->infoHeader->colorsUsed = 0;
+
+    image->colorMatrix = oilColorMatrixAlloc(1, width, height);
 
     return image;
 }
@@ -91,35 +100,38 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
 
     int toPad = (4 - (image->infoHeader->width * 3) % 4) % 4;
     for(uint32_t y = 0; y < image->infoHeader->width; y++)
-        for(uint32_t x = 0; x < image->infoHeader->width; x++)
+    {
+        for (uint32_t x = 0; x < image->infoHeader->width; x++)
         {
-            switch(image->infoHeader->bitDepth)
+            switch (image->infoHeader->bitDepth)
             {
                 case 16:
-                    writeData(image->matrix->matrix[y][x]->r, "colorComponent: r");
-                    writeData(image->matrix->matrix[y][x]->g, "colorComponent: g");
-                    writeData(image->matrix->matrix[y][x]->b, "colorComponent: b");
+                    writeData(image->colorMatrix->matrix[y][x]->r, "colorComponent: r");
+                    writeData(image->colorMatrix->matrix[y][x]->g, "colorComponent: g");
+                    writeData(image->colorMatrix->matrix[y][x]->b, "colorComponent: b");
                     break;
 
                 case 8:
                 default:
                 {
-                    uint8_t r = (uint8_t) image->matrix->matrix[y][x]->r;
-                    uint8_t g = (uint8_t) image->matrix->matrix[y][x]->g;
-                    uint8_t b = (uint8_t) image->matrix->matrix[y][x]->b;
+                    uint8_t r = (uint8_t) image->colorMatrix->matrix[y][x]->r;
+                    uint8_t g = (uint8_t) image->colorMatrix->matrix[y][x]->g;
+                    uint8_t b = (uint8_t) image->colorMatrix->matrix[y][x]->b;
 
                     writeData(r, "colorComponent: r");
-                    writeData(g, "colorComponent: r");
-                    writeData(b, "colorComponent: r");
+                    writeData(g, "colorComponent: g");
+                    writeData(b, "colorComponent: b");
 
                     break;
                 }
             }
 
-            uint8_t padding = 0;
-            for(int i = 0; i < toPad; i++)
-                writeData(padding, "colorComponent: padding");
         }
+
+        uint8_t padding = 0;
+        for (int i = 0; i < toPad; i++)
+            writeData(padding, "colorComponent: padding");
+    }
 
     if(fclose(f) == -1)
     {

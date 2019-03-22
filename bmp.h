@@ -6,6 +6,7 @@
 #define OIL_BMP_H
 
 #include "common.h"
+#include "oilerror.h"
 
 static uint16_t bmp_signature_bm  = 0x4D42; //Windows 3.1x, 95, NT, ... etc.
 static uint16_t bmp_signature_ba  = 0x4142; //OS/2 struct bitmap array
@@ -24,6 +25,9 @@ static uint32_t bmp_compression_alphaBitFields  = 6;
 static uint32_t bmp_compression_cmyk            = 11;
 static uint32_t bmp_compression_cmyk_rle8       = 12;
 static uint32_t bmp_compression_cmyk_rle4       = 13;
+
+#pragma pack(push)
+#pragma pack(1)
 
 typedef struct {
     uint16_t signature;
@@ -56,12 +60,13 @@ typedef struct {
 
 } bmpInfoHeader;
 
+#pragma pack(pop)
 
 typedef struct {
     bmpFileHeader* fileHeader;
     bmpInfoHeader* infoHeader;
 
-    colorMatrix* matrix;
+    colorMatrix* colorMatrix;
 
 } bmpImage;
 

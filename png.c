@@ -31,6 +31,7 @@ pngImage *oilCreateImg(void)
     img->pixelsInfo->gammaSet = 0;
     img->txtItems = NULL;
     img->colorMatrix = NULL;
+    img->time = NULL;
     return img;
 }
 
@@ -96,6 +97,9 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
             {
                 color->a = png_get_next_byte;
             }
+        } else
+        {
+            color->a = (image->bitDepth == 16) ? (uint16_t) 0xFFFF : (uint8_t) 0xFF;
         }
 
         image->colorMatrix->matrix[scanlineIndex][i] = color;
@@ -201,7 +205,40 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
                 break;
 
             case png_filterType_up:
+
+                if(i != 1) {
+
+                    for(size_t component = 0; component < image->width; component++)
+                    {
+                        for(size_t byte = 0; byte < bytesPerColor; byte++)
+                        {
+                            output[byteCounter + component * bytesPerColor + byte] =
+                                    output[byteCounter + component * bytesPerColor + byte] +
+                                    output[byteCounter - (image->width * bytesPerColor + 1) + component * bytesPerColor + byte];;
+                        }
+                    }
+                }
+
+                getImageColors(image, &byteCounter, output, i);
+                break;
+
             case png_filterType_average:
+
+                for(size_t component = 1; component < image->width; component++)
+                {
+                    for(size_t byte = 0; byte < bytesPerColor; byte++)
+                    {
+                        output[byteCounter + component * bytesPerColor + byte] =
+                                (uint8_t)(output[byteCounter + component * bytesPerColor + byte] + floor(
+                                        (output[byteCounter + (component - 1) * bytesPerColor + byte] +
+                                        output[byteCounter - (image->width * bytesPerColor + 1) + component * bytesPerColor + byte]) / 2.0
+                                ));
+                    }
+                }
+
+                getImageColors(image, &byteCounter, output, i);
+                break;
+
             case png_filterType_paeth:
             default:
                 free(output);
@@ -329,7 +366,16 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
                image->text = realloc(image->text, strlen(image->text) + chunk->length + 2);
                image->text = strcat(strcat(image->text, "\1"), (const char *) chunk->data);
            }*/
+
+          //todo!
     }
+    else if(chunk->type == png_chunk_iTXt)
+    {
+        if(simplified) return 1;
+
+        //todo!
+    }
+
     else if (chunk->type == png_chunk_pHYs)
     {
         if(simplified) return 1;
@@ -341,6 +387,18 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
             oilPushErrorf("[OILERROR]: %i is unknown unit\n", chunk->data[8]);
             return 0;
         }
+    }
+    else if(chunk->type == png_chunk_tIME)
+    {
+        if(simplified) return 1;
+
+        image->time = malloc(sizeof(pngTime));
+        image->time->year = buffToU16(chunk->data);
+        image->time->month = chunk->data[2];
+        image->time->day = chunk->data[3];
+        image->time->hour = chunk->data[4];
+        image->time->minute = chunk->data[5];
+        image->time->second = chunk->data[6];
     }
     else
     {
@@ -384,7 +442,6 @@ int oilLoadImage(char *fileName, pngImage** image, int simplified)
 
     while (1)
     {
-
         if (fread(buff4, sizeof(buff4), 1, f) != 1)
         {
             oilPushErrorf("[OILERROR]: Unable to read chunk length at position %i\n", ftell(f));

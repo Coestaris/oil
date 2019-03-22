@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <zlib.h>
+#include <math.h>
 
 #include "common.h"
 #include "oilerror.h"
@@ -29,16 +30,17 @@ static uint8_t png_signature[8] = {
     0x0A              // LF
 };
 
-static uint32_t png_chunk_IEND = 0x444E4549; //[4] = { 0x49, 0x45, 0x4E, 0x44 };
-static uint32_t png_chunk_IHDR = 0X52444849; //[4] = { 0x49, 0x48, 0x44, 0x52 };
-static uint32_t png_chunk_gAMA = 0x414D4167; //[4] = { 0x67, 0x41, 0x4D, 0x41 };
-static uint32_t png_chunk_cHRM = 0x4D524863; //[4] = { 0x63, 0x48, 0x52, 0x4D };
-static uint32_t png_chunk_bKGD = 0x44474B62; //[4] = { 0x62, 0x4B, 0x47, 0x44 };
-static uint32_t png_chunk_IDAT = 0x54414449; //[4] = { 0x49, 0x44, 0x41, 0x54 };
-static uint32_t png_chunk_tEXt = 0x74584574; //[4] = { 0x74, 0x45, 0x58, 0x74 };
-static uint32_t png_chunk_PLTE = 0x45544C50; //[4] = { 0x50, 0x4C, 0x54, 0x45 };
-static uint32_t png_chunk_pHYs = 0x73594870; //[4] = { 0x70, 0x48, 0x59, 0x73 };
-static uint32_t png_chunk_tIME = 0x454D4974; //[4] = { 0x74, 0x49, 0x4D, 0x45 };
+static uint32_t png_chunk_IEND = 0x444E4549u; //[4] = { 0x49, 0x45, 0x4E, 0x44 };
+static uint32_t png_chunk_IHDR = 0X52444849u; //[4] = { 0x49, 0x48, 0x44, 0x52 };
+static uint32_t png_chunk_gAMA = 0x414D4167u; //[4] = { 0x67, 0x41, 0x4D, 0x41 };
+static uint32_t png_chunk_cHRM = 0x4D524863u; //[4] = { 0x63, 0x48, 0x52, 0x4D };
+static uint32_t png_chunk_bKGD = 0x44474B62u; //[4] = { 0x62, 0x4B, 0x47, 0x44 };
+static uint32_t png_chunk_IDAT = 0x54414449u; //[4] = { 0x49, 0x44, 0x41, 0x54 };
+static uint32_t png_chunk_tEXt = 0x74584574u; //[4] = { 0x74, 0x45, 0x58, 0x74 };
+static uint32_t png_chunk_PLTE = 0x45544C50u; //[4] = { 0x50, 0x4C, 0x54, 0x45 };
+static uint32_t png_chunk_pHYs = 0x73594870u; //[4] = { 0x70, 0x48, 0x59, 0x73 };
+static uint32_t png_chunk_tIME = 0x454D4974u; //[4] = { 0x74, 0x49, 0x4D, 0x45 };
+static uint32_t png_chunk_iTXt = 0x74585469u; //[4] = { 0x69, 0x54, 0x58, 0x74 };
 
 #define png_filterType_none    0
 #define png_filterType_sub     1
@@ -59,6 +61,16 @@ typedef struct
     uint32_t crc;
 
 } pngChunk;
+
+typedef struct
+{
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+} pngTime;
 
 typedef struct
 {
@@ -113,6 +125,7 @@ typedef struct
 
     int txtItemsCount;
     pngText* txtItems;
+    pngTime* time;
 
     colorMatrix* colorMatrix;
 
