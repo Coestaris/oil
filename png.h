@@ -79,16 +79,7 @@ typedef struct
 
 } pngText;
 
-typedef struct
-{
-    uint8_t usePalette;
-    uint8_t useColor;
-    uint8_t hasAlpha;
-
-    uint8_t gammaSet;
-    uint32_t gamma;
-
-    uint8_t cieSet;
+typedef struct {
     uint32_t whitePointX;
     uint32_t whitePointY;
     uint32_t redX;
@@ -97,28 +88,33 @@ typedef struct
     uint32_t greenY;
     uint32_t blueX;
     uint32_t blueY;
+} pngCIEInfo;
 
-    uint8_t bkgColorSet;
+typedef struct
+{
+    uint8_t bitDepth;
 
-    oilColor bkgColor;
+    uint8_t colorFlag;
+
+    uint8_t usePalette;
+    uint8_t useColor;
+    uint8_t hasAlpha;
+
+    uint8_t gammaSet;
+    uint32_t gamma;
+
+    pngCIEInfo* cie;
+    oilColor* bkgColor;
 
     size_t paletteLen;
-    oilColor* palette;
+    oilColor** palette;
 
     uint32_t ppuX;
     uint32_t ppuY;
 
 } pngPixelData;
 
-typedef struct
-{
-    uint32_t width;
-    uint32_t height;
-    uint8_t bitDepth;
-
-    pngPixelData* pixelsInfo;
-    uint8_t colorFlag;
-
+typedef struct {
     uint8_t compression;
     uint8_t filtration;
     uint8_t interlace;
@@ -126,6 +122,15 @@ typedef struct
     int txtItemsCount;
     pngText* txtItems;
     pngTime* time;
+} pngImageData;
+
+typedef struct
+{
+    pngPixelData* pixelsInfo;
+    pngImageData* imageData;
+
+    uint32_t width;
+    uint32_t height;
 
     colorMatrix* colorMatrix;
 

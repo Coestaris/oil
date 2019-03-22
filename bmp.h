@@ -26,9 +26,6 @@ static uint32_t bmp_compression_cmyk            = 11;
 static uint32_t bmp_compression_cmyk_rle8       = 12;
 static uint32_t bmp_compression_cmyk_rle4       = 13;
 
-#pragma pack(push)
-#pragma pack(1)
-
 typedef struct {
     uint16_t signature;
     uint32_t fileSize;
@@ -42,8 +39,9 @@ typedef struct {
 
 typedef struct {
     uint32_t headerSize;
-    uint32_t width;
-    uint32_t height;
+
+    //uint32_t width;
+    //uint32_t height;
 
     uint16_t planes;
 
@@ -60,11 +58,32 @@ typedef struct {
 
 } bmpInfoHeader;
 
-#pragma pack(pop)
+static const size_t bmpFileHeaderSize
+            = sizeof(uint16_t)   //signature
+            + sizeof(uint32_t)   //fileSize
+            + sizeof(uint16_t)   //reserved1
+            + sizeof(uint16_t)   //reserved2
+            + sizeof(uint32_t);  //offsetBytes
+
+static const size_t bmpInfoHeaderSize
+            = sizeof(uint32_t)  //header size
+            + sizeof(uint32_t)  //width
+            + sizeof(uint16_t)  //height
+            + sizeof(uint16_t)  //planes
+            + sizeof(uint32_t)  //bitDepth
+            + sizeof(uint32_t)  //compression
+            + sizeof(uint32_t)  //imageSize
+            + sizeof(uint32_t)  //XPelsPerMeter
+            + sizeof(uint32_t)  //YPelsPerMeter
+            + sizeof(uint32_t)  //colorsUsed
+            + sizeof(uint32_t); //colorsImportant
 
 typedef struct {
     bmpFileHeader* fileHeader;
     bmpInfoHeader* infoHeader;
+
+    uint32_t width;
+    uint32_t height;
 
     colorMatrix* colorMatrix;
 

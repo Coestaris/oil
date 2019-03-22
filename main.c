@@ -7,7 +7,7 @@
 int main(int argc, char** argv)
 {
     pngImage* src;
-    if(!(src = oilPNGLoad("sample2.png", 1)))
+    if(!(src = oilPNGLoad("img.png", 1)))
     {
         oilPrintError();
         exit(EXIT_FAILURE);

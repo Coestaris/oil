@@ -24,14 +24,17 @@ pngImage *oilCreateImg(void)
 {
     pngImage *img = malloc(sizeof(pngImage));
     img->pixelsInfo = malloc(sizeof(pngPixelData));
-    img->pixelsInfo->bkgColorSet = 0;
+    img->pixelsInfo->cie = NULL;
+    img->pixelsInfo->bkgColor = NULL;
     img->pixelsInfo->ppuY = 0;
     img->pixelsInfo->ppuX = 0;
-    img->pixelsInfo->cieSet = 0;
     img->pixelsInfo->gammaSet = 0;
-    img->txtItems = NULL;
+
+    img->imageData = malloc(sizeof(pngImageData));
+    img->imageData->txtItems = NULL;
+    img->imageData->time = NULL;
+
     img->colorMatrix = NULL;
-    img->time = NULL;
     return img;
 }
 
@@ -61,7 +64,7 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
         {
             if (image->pixelsInfo->useColor)
             {
-                if (image->bitDepth == 16)
+                if (image->pixelsInfo->bitDepth == 16)
                 {
                     color->r = png_get_next_byte << 8 | png_get_next_byte;
                     color->g = png_get_next_byte << 8 | png_get_next_byte;
@@ -76,7 +79,7 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
             }
             else
             {
-                if (image->bitDepth == 16)
+                if (image->pixelsInfo->bitDepth == 16)
                 {
                     color->r = color->g = color->b = png_get_next_byte << 8 | png_get_next_byte;
                 }
@@ -89,7 +92,7 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
 
         if (image->pixelsInfo->hasAlpha)
         {
-            if (image->bitDepth == 16)
+            if (image->pixelsInfo->bitDepth == 16)
             {
                 color->a = png_get_next_byte << 8 | png_get_next_byte;
             }
@@ -99,11 +102,59 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
             }
         } else
         {
-            color->a = (image->bitDepth == 16) ? (uint16_t) 0xFFFF : (uint8_t) 0xFF;
+            color->a = (image->pixelsInfo->bitDepth == 16) ? (uint16_t) 0xFFFF : (uint8_t) 0xFF;
         }
 
         image->colorMatrix->matrix[scanlineIndex][i] = color;
     }
+}
+
+void filterData(pngImage* image, uint8_t* output, uint8_t bytesPerColor, size_t i,
+        uint8_t (*filterFunc)(int x, int a, int b, int c))
+{
+    for (size_t color = 0; color < image->width; color++)
+    {
+        for (size_t component = 0; component < bytesPerColor; component++)
+        {
+            int x = output[(i * bytesPerColor * image->width + i + 1) + color * bytesPerColor + component];
+            int a = (color != 0) ? (output[(i * bytesPerColor * image->width + i + 1) + (color - 1) * bytesPerColor + component]) : (0);
+            int b = (i != 0)     ? (output[((i - 1) * bytesPerColor * image->width + i) + color * bytesPerColor + component]) : (0);
+            int c = (i != 0 && color != 0) ? (output[((i - 1) * bytesPerColor * image->width + i) + (color - 1)* bytesPerColor + component]) : (0);
+
+            output[(i * bytesPerColor * image->width + i + 1) + color * bytesPerColor + component] = filterFunc(x, a, b, c);
+            printf("x: %i, a: %i, b: %i, c: %i\n", x, a, b, c);
+        }
+    }
+}
+
+uint8_t filterSub(int x, int a, int b, int c)
+{
+    return (uint8_t)(x + a);
+}
+
+uint8_t filterUp(int x, int a, int b, int c)
+{
+    return (uint8_t)(x + b);
+}
+
+uint8_t filterAverage(int x, int a, int b, int c)
+{
+    return (uint8_t)(x + floor((a + b) / 2.0));
+}
+
+uint8_t filterPaeth(int x, int a, int b, int c)
+{
+    int pr = 0;
+    int p = a + b - c;
+    int pa = abs(p - a);
+    int pb = abs(p - b);
+    int pc = abs(p - c);
+
+    if(pa <= pb && pa <= pc) pr = a;
+    else if(pb <= pc) pr = b;
+    else pr = c;
+
+    return (uint8_t)(x + pr);
 }
 
 int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
@@ -125,16 +176,16 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     }
     else if (image->pixelsInfo->useColor)
     {
-        bytesPerColor = (uint8_t) (3 * image->bitDepth / 8);
+        bytesPerColor = (uint8_t) (3 * image->pixelsInfo->bitDepth / 8);
     }
     else
     {
-        bytesPerColor = (uint8_t) (image->bitDepth / 8);
+        bytesPerColor = (uint8_t) (image->pixelsInfo->bitDepth / 8);
     }
 
     if (image->pixelsInfo->hasAlpha)
     {
-        bytesPerColor += image->bitDepth / 8;
+        bytesPerColor += image->pixelsInfo->bitDepth / 8;
     }
 
     size_t outputLen = bytesPerColor * image->width * image->height + image->height - 1;
@@ -181,6 +232,8 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     {
         int filtType = output[byteCounter++];
 
+
+
 #ifdef OILDEBUG_PRINT_SCANLINES
         printf("[OILDEBUG]: Reading scanline #%li, filtType: %i\n", i, filtType);
 #endif
@@ -188,63 +241,31 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
         switch (filtType)
         {
             case png_filterType_none:
-                getImageColors(image, &byteCounter, output, i);
                 break;
 
             case png_filterType_sub:
-                for (size_t component = 1; component < image->width; component++)
-                {
-                    for (size_t byte = 0; byte < bytesPerColor; byte++)
-                    {
-                        output[byteCounter + component * bytesPerColor + byte] =
-                                output[byteCounter + component * bytesPerColor + byte] +
-                                output[byteCounter + (component - 1) * bytesPerColor + byte];
-                    }
-                }
-                getImageColors(image, &byteCounter, output, i);
+                filterData(image, output, bytesPerColor, i, filterSub);
                 break;
 
             case png_filterType_up:
-
-                if(i != 1) {
-
-                    for(size_t component = 0; component < image->width; component++)
-                    {
-                        for(size_t byte = 0; byte < bytesPerColor; byte++)
-                        {
-                            output[byteCounter + component * bytesPerColor + byte] =
-                                    output[byteCounter + component * bytesPerColor + byte] +
-                                    output[byteCounter - (image->width * bytesPerColor + 1) + component * bytesPerColor + byte];;
-                        }
-                    }
-                }
-
-                getImageColors(image, &byteCounter, output, i);
+                filterData(image, output, bytesPerColor, i, filterUp);
                 break;
 
             case png_filterType_average:
-
-                for(size_t component = 1; component < image->width; component++)
-                {
-                    for(size_t byte = 0; byte < bytesPerColor; byte++)
-                    {
-                        output[byteCounter + component * bytesPerColor + byte] =
-                                (uint8_t)(output[byteCounter + component * bytesPerColor + byte] + floor(
-                                        (output[byteCounter + (component - 1) * bytesPerColor + byte] +
-                                        output[byteCounter - (image->width * bytesPerColor + 1) + component * bytesPerColor + byte]) / 2.0
-                                ));
-                    }
-                }
-
-                getImageColors(image, &byteCounter, output, i);
+                filterData(image, output, bytesPerColor, i, filterAverage);
                 break;
 
             case png_filterType_paeth:
+                filterData(image, output, bytesPerColor, i, filterPaeth);
+                break;
+
             default:
                 free(output);
                 oilPushErrorf("[OILERROR]: %i is unknown filter type\n", filtType);
                 return 0;
         }
+
+        getImageColors(image, &byteCounter, output, i);
     }
 
     free(output);
@@ -269,16 +290,16 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
     {
         image->width = buffToU32(chunk->data);
         image->height = buffToU32(chunk->data + 4);
-        image->bitDepth = chunk->data[8];
 
+        image->pixelsInfo->bitDepth = chunk->data[8];
         image->pixelsInfo->usePalette = png_colorflag_palette(chunk->data[9]);
         image->pixelsInfo->useColor = png_colorflag_color(chunk->data[9]);
         image->pixelsInfo->hasAlpha = png_colorflag_alpha(chunk->data[9]);
-        image->colorFlag = chunk->data[9];
+        image->pixelsInfo->colorFlag = chunk->data[9];
 
-        image->compression = chunk->data[10];
-        image->filtration = chunk->data[11];
-        image->interlace = chunk->data[12];
+        image->imageData->compression = chunk->data[10];
+        image->imageData->filtration = chunk->data[11];
+        image->imageData->interlace = chunk->data[12];
     }
     else if (chunk->type == png_chunk_IDAT)
     {
@@ -294,9 +315,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
         image->pixelsInfo->palette = malloc(sizeof(oilColor) * image->pixelsInfo->paletteLen);
         for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
         {
-            image->pixelsInfo->palette[i].r = chunk->data[i * 3];
-            image->pixelsInfo->palette[i].g = chunk->data[i * 3 + 1];
-            image->pixelsInfo->palette[i].b = chunk->data[i * 3 + 2];
+            image->pixelsInfo->palette[i] = colorp(chunk->data[i * 3], chunk->data[i * 3 + 1], chunk->data[i * 3 + 2], 0xFF);
         }
     }
     else if (chunk->type == png_chunk_gAMA)
@@ -310,35 +329,34 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
     {
         if(simplified) return 1;
 
-        image->pixelsInfo->cieSet = 1;
-        image->pixelsInfo->whitePointX = buffToU32(chunk->data);
-        image->pixelsInfo->whitePointY = buffToU32(chunk->data + 4);
-        image->pixelsInfo->redX = buffToU32(chunk->data + 8);
-        image->pixelsInfo->redY = buffToU32(chunk->data + 16);
-        image->pixelsInfo->greenX = buffToU32(chunk->data + 20);
-        image->pixelsInfo->greenY = buffToU32(chunk->data + 24);
-        image->pixelsInfo->blueX = buffToU32(chunk->data + 28);
-        image->pixelsInfo->blueY = buffToU32(chunk->data + 32);
+        image->pixelsInfo->cie = malloc(sizeof(pngCIEInfo));
+        image->pixelsInfo->cie->whitePointX = buffToU32(chunk->data);
+        image->pixelsInfo->cie->whitePointY = buffToU32(chunk->data + 4);
+        image->pixelsInfo->cie->redX = buffToU32(chunk->data + 8);
+        image->pixelsInfo->cie->redY = buffToU32(chunk->data + 16);
+        image->pixelsInfo->cie->greenX = buffToU32(chunk->data + 20);
+        image->pixelsInfo->cie->greenY = buffToU32(chunk->data + 24);
+        image->pixelsInfo->cie->blueX = buffToU32(chunk->data + 28);
+        image->pixelsInfo->cie->blueY = buffToU32(chunk->data + 32);
     }
     else if (chunk->type == png_chunk_bKGD)
     {
         if(simplified) return 1;
 
-        image->pixelsInfo->bkgColorSet = 1;
-        switch (image->colorFlag)
+        image->pixelsInfo->bkgColor = colorp(0, 0, 0, 0);
+        switch (image->pixelsInfo->colorFlag)
         {
             case 0:
             case 4:
-                image->pixelsInfo->bkgColor.r =
-                  image->pixelsInfo->bkgColor.g =
-                  image->pixelsInfo->bkgColor.b = buffToU16(chunk->data);
+                image->pixelsInfo->bkgColor->r = image->pixelsInfo->bkgColor->g = image->pixelsInfo->bkgColor->b =
+                        buffToU16(chunk->data);
                 break;
 
             case 2:
             case 6:
-                image->pixelsInfo->bkgColor.r = buffToU16(chunk->data);
-                image->pixelsInfo->bkgColor.g = buffToU16(chunk->data + 2);
-                image->pixelsInfo->bkgColor.b = buffToU16(chunk->data + 4);
+                image->pixelsInfo->bkgColor->r = buffToU16(chunk->data);
+                image->pixelsInfo->bkgColor->g = buffToU16(chunk->data + 2);
+                image->pixelsInfo->bkgColor->b = buffToU16(chunk->data + 4);
                 break;
 
             case 3:
@@ -346,7 +364,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
                 break;
 
             default:
-                oilPushErrorf("[OILERROR]: % is unknown colorFlag\n", image->colorFlag);
+                oilPushErrorf("[OILERROR]: % is unknown colorFlag\n", image->pixelsInfo->colorFlag);
                 return 0;
         }
 
@@ -392,13 +410,13 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
     {
         if(simplified) return 1;
 
-        image->time = malloc(sizeof(pngTime));
-        image->time->year = buffToU16(chunk->data);
-        image->time->month = chunk->data[2];
-        image->time->day = chunk->data[3];
-        image->time->hour = chunk->data[4];
-        image->time->minute = chunk->data[5];
-        image->time->second = chunk->data[6];
+        image->imageData->time = malloc(sizeof(pngTime));
+        image->imageData->time->year = buffToU16(chunk->data);
+        image->imageData->time->month = chunk->data[2];
+        image->imageData->time->day = chunk->data[3];
+        image->imageData->time->hour = chunk->data[4];
+        image->imageData->time->minute = chunk->data[5];
+        image->imageData->time->second = chunk->data[6];
     }
     else
     {
@@ -533,7 +551,19 @@ pngImage* oilPNGLoad(char *fileName, int simplified)
 void oilPNGFreeImage(pngImage *image)
 {
     if(image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
+    if(image->pixelsInfo->cie) free(image->pixelsInfo->cie);
+    if(image->pixelsInfo->palette)
+    {
+        for(size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
+            free(image->pixelsInfo->palette[i]);
+        free(image->pixelsInfo->palette);
+    }
+    if(image->pixelsInfo->bkgColor) free(image->pixelsInfo->bkgColor);
     free(image->pixelsInfo);
-    free(image->txtItems);
+
+    if(image->imageData->time) free(image->imageData->time);
+    if(image->imageData->txtItems) free(image->imageData->txtItems);
+    free(image->imageData);
+
     free(image);
 }

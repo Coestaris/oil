@@ -11,7 +11,7 @@ bmpImage* allocImage()
     image->fileHeader->reserved1 = 0;
     image->fileHeader->reserved2 = 0;
     image->infoHeader = malloc(sizeof(bmpInfoHeader));
-    image->infoHeader->headerSize = sizeof(bmpInfoHeader);
+    image->infoHeader->headerSize = bmpInfoHeaderSize;
     image->colorMatrix = NULL;
     return image;
 }
@@ -42,7 +42,7 @@ bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
     bmpImage* image = allocImage();
     image->fileHeader->signature = bmp_signature_bm;
 
-    image->fileHeader->offsetBytes = sizeof(bmpFileHeader) + sizeof(bmpInfoHeader);
+    image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpInfoHeaderSize;
 
     int toPad = (4 - (width * 3) % 4) % 4;
     image->infoHeader->imageSize = (width * height) * 3 * bitDepth / 24 +
@@ -52,8 +52,6 @@ bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
             image->fileHeader->offsetBytes  +
             image->infoHeader->imageSize;
 
-    image->infoHeader->height = height;
-    image->infoHeader->width = width;
     image->infoHeader->bitDepth = bitDepth;
     image->infoHeader->compression = bmp_compression_rgb;
     image->infoHeader->colorsImportant = 0;
@@ -63,6 +61,9 @@ bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
 
     image->infoHeader->colorsImportant = 0;
     image->infoHeader->colorsUsed = 0;
+
+    image->width = width;
+    image->height = height;
 
     image->colorMatrix = oilColorMatrixAlloc(1, width, height);
 
@@ -87,8 +88,8 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     writeData(image->fileHeader->offsetBytes, "fileHeader: offsetBytes");
 
     writeData(image->infoHeader->headerSize,      "infoHeader : headerSize");
-    writeData(image->infoHeader->width,           "infoHeader : width");
-    writeData(image->infoHeader->height,          "infoHeader : height");
+    writeData(image->width,                       "infoHeader : width");
+    writeData(image->height,                      "infoHeader : height");
     writeData(image->infoHeader->planes,          "infoHeader : planes");
     writeData(image->infoHeader->bitDepth,        "infoHeader : bitDepth");
     writeData(image->infoHeader->compression,     "infoHeader : compression");
@@ -98,10 +99,10 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     writeData(image->infoHeader->colorsUsed,      "infoHeader : colorsUsed");
     writeData(image->infoHeader->colorsImportant, "infoHeader : colorsImportant");
 
-    int toPad = (4 - (image->infoHeader->width * 3) % 4) % 4;
-    for(uint32_t y = 0; y < image->infoHeader->width; y++)
+    int toPad = (4 - (image->width * 3) % 4) % 4;
+    for(uint32_t y = 0; y < image->width; y++)
     {
-        for (uint32_t x = 0; x < image->infoHeader->width; x++)
+        for (uint32_t x = 0; x < image->width; x++)
         {
             switch (image->infoHeader->bitDepth)
             {

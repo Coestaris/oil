@@ -126,7 +126,7 @@ imageData* oilGetPNGImageData(pngImage *img, uint32_t componentFormat, uint32_t 
 
     if(dataFormat == GL_AUTO)
     {
-        switch(img->bitDepth)
+        switch(img->pixelsInfo->bitDepth)
         {
             case 1:
             case 2:
