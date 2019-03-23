@@ -100,7 +100,7 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     writeData(image->infoHeader->colorsImportant, "infoHeader : colorsImportant");
 
     int toPad = (4 - (image->width * 3) % 4) % 4;
-    for(uint32_t y = 0; y < image->width; y++)
+    for(int32_t y = image->width - 1; y >= 0; y--)
     {
         for (uint32_t x = 0; x < image->width; x++)
         {
@@ -119,9 +119,9 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
                     uint8_t g = (uint8_t) image->colorMatrix->matrix[y][x]->g;
                     uint8_t b = (uint8_t) image->colorMatrix->matrix[y][x]->b;
 
-                    writeData(r, "colorComponent: r");
-                    writeData(g, "colorComponent: g");
                     writeData(b, "colorComponent: b");
+                    writeData(g, "colorComponent: g");
+                    writeData(r, "colorComponent: r");
 
                     break;
                 }
