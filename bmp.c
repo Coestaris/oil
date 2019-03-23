@@ -4,14 +4,48 @@
 
 #include "bmp.h"
 
-bmpImage* allocImage()
+bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 {
     bmpImage* image = malloc(sizeof(bmpImage));
     image->fileHeader = malloc(sizeof(bmpFileHeader));
+    image->fileHeader->signature = signature;
     image->fileHeader->reserved1 = 0;
     image->fileHeader->reserved2 = 0;
-    image->infoHeader = malloc(sizeof(bmpInfoHeader));
-    image->infoHeader->headerSize = bmpInfoHeaderSize;
+
+    image->imageData = malloc(sizeof(bmpImageData));
+    image->imageData->headerType = type;
+
+    switch(type)
+    {
+        case BITMAPCOREHEADER:
+        default:
+        {
+            image->imageData->header = malloc(sizeof(bmpCoreHeader));
+            bmpCoreHeader* header = image->imageData->header;
+            header->headerSize = bmpCoreHeaderSize;
+            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpCoreHeaderSize;
+            break;
+        }
+
+        case BITMAPINFOHEADER:
+        {
+            image->imageData->header = malloc(sizeof(bmpInfoHeader));
+            bmpInfoHeader* header = image->imageData->header;
+            header->headerSize = bmpInfoHeaderSize;
+            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpInfoHeaderSize;
+            break;
+        }
+
+        case BITMAPV4HEADER:
+        {
+            image->imageData->header = malloc(sizeof(bmpV4Header));
+            bmpV4Header* header = image->imageData->header;
+            header->headerSize = bmpV4HeaderSize;
+            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpV4HeaderSize;
+            break;
+        }
+    }
+
     image->colorMatrix = NULL;
     return image;
 }
@@ -32,42 +66,75 @@ bmpImage* oilBMPLoad(char* fileName)
 void oilBMPFreeImage(bmpImage* image)
 {
     if(image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
-    free(image->infoHeader);
+    free(image->imageData->header);
+    free(image->imageData);
     free(image->fileHeader);
     free(image);
 }
 
-bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth)
+bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType)
 {
-    bmpImage* image = allocImage();
-    image->fileHeader->signature = bmp_signature_bm;
-
-    image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpInfoHeaderSize;
-
-    int toPad = (4 - (width * 3) % 4) % 4;
-    image->infoHeader->imageSize = (width * height) * 3 * bitDepth / 24 +
-            (width)* toPad;
-
-    image->fileHeader->fileSize =
-            image->fileHeader->offsetBytes  +
-            image->infoHeader->imageSize;
-
-    image->infoHeader->bitDepth = bitDepth;
-    image->infoHeader->compression = bmp_compression_rgb;
-    image->infoHeader->colorsImportant = 0;
-    image->infoHeader->planes = 1;
-    image->infoHeader->XpelsPerMeter = 2835;
-    image->infoHeader->YpelsPerMeter = 2835;
-
-    image->infoHeader->colorsImportant = 0;
-    image->infoHeader->colorsUsed = 0;
-
-    image->width = width;
-    image->height = height;
-
+    bmpImage* image = allocImage(bmp_signature_bm, headerType);
     image->colorMatrix = oilColorMatrixAlloc(1, width, height);
 
+    uint32_t toPad = (4 - (width * 3) % 4) % 4;
+    uint32_t imageSize = (width * height) * 3 * bitDepth / 24 + (width)* toPad;
+    image->fileHeader->fileSize = image->fileHeader->offsetBytes  + imageSize;
+
+    switch(headerType)
+    {
+        case BITMAPCOREHEADER:
+        default:
+        {
+            bmpCoreHeader* header = image->imageData->header;
+            header->width = (uint16_t)width;
+            header->height = (uint16_t)height;
+            header->bitDepth = bitDepth;
+            header->planes = 0;
+            break;
+        }
+
+        case BITMAPINFOHEADER:
+        {
+            bmpInfoHeader* header = image->imageData->header;
+            header->imageSize = imageSize;
+
+            header->width = width;
+            header->height = height;
+
+            header->bitDepth = bitDepth;
+            header->compression = bmp_compression_rgb;
+            header->colorsImportant = 0;
+            header->planes = 1;
+            header->XpelsPerMeter = 2835;
+            header->YpelsPerMeter = 2835;
+
+            header->colorsImportant = 0;
+            header->colorsUsed = 0;
+            break;
+        }
+
+        case BITMAPV4HEADER:
+        {
+            bmpV4Header* header = image->imageData->header;
+            break;
+        }
+    }
+
+    if(headerType == BITMAPCOREHEADER) {
+        image->width = (uint16_t)width;
+        image->height = (uint16_t)height;
+    } else {
+        image->width = width;
+        image->height = height;
+    }
+
     return image;
+}
+
+bmpImage* oilBMPCreateImage(uint16_t width, uint16_t height, uint16_t bitDepth)
+{
+    return oilBMPCreateImageExt(width, height, bitDepth, BITMAPCOREHEADER);
 }
 
 #define writeData(var, str) if(fwrite(&var, sizeof(var), 1, f) != 1) { oilPushError("Unable to write "str); fclose(f); return 0; }
@@ -86,25 +153,47 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     writeData(image->fileHeader->reserved1,   "fileHeader: reserved1");
     writeData(image->fileHeader->reserved2,   "fileHeader: reserved2");
     writeData(image->fileHeader->offsetBytes, "fileHeader: offsetBytes");
+    uint16_t bitDepth = 0;
 
-    writeData(image->infoHeader->headerSize,      "infoHeader : headerSize");
-    writeData(image->width,                       "infoHeader : width");
-    writeData(image->height,                      "infoHeader : height");
-    writeData(image->infoHeader->planes,          "infoHeader : planes");
-    writeData(image->infoHeader->bitDepth,        "infoHeader : bitDepth");
-    writeData(image->infoHeader->compression,     "infoHeader : compression");
-    writeData(image->infoHeader->imageSize,       "infoHeader : imageSize");
-    writeData(image->infoHeader->XpelsPerMeter,   "infoHeader : XpelsPerMeter");
-    writeData(image->infoHeader->YpelsPerMeter,   "infoHeader : YpelsPerMeter");
-    writeData(image->infoHeader->colorsUsed,      "infoHeader : colorsUsed");
-    writeData(image->infoHeader->colorsImportant, "infoHeader : colorsImportant");
+    switch(image->imageData->headerType)
+    {
+        case BITMAPCOREHEADER:
+        default:
+        {
+            bmpCoreHeader* header = image->imageData->header;
+            writeData(header->headerSize,       "infoHeader : headerSize");
+            writeData(header->width,             "infoHeader : width");
+            writeData(header->height,            "infoHeader : height");
+            writeData(header->planes,           "infoHeader : planes");
+            writeData(header->bitDepth,         "infoHeader : bitDepth");
+            bitDepth = header->bitDepth;
+            break;
+        }
+        case BITMAPINFOHEADER:
+        {
+            bmpInfoHeader* header = image->imageData->header;
+            writeData(header->headerSize,      "infoHeader : headerSize");
+            writeData(image->width,            "infoHeader : width");
+            writeData(image->height,           "infoHeader : height");
+            writeData(header->planes,          "infoHeader : planes");
+            writeData(header->bitDepth,        "infoHeader : bitDepth");
+            writeData(header->compression,     "infoHeader : compression");
+            writeData(header->imageSize,       "infoHeader : imageSize");
+            writeData(header->XpelsPerMeter,   "infoHeader : XpelsPerMeter");
+            writeData(header->YpelsPerMeter,   "infoHeader : YpelsPerMeter");
+            writeData(header->colorsUsed,      "infoHeader : colorsUsed");
+            writeData(header->colorsImportant, "infoHeader : colorsImportant");
+            bitDepth = header->bitDepth;
+            break;
+        }
+    }
 
     int toPad = (4 - (image->width * 3) % 4) % 4;
     for(int32_t y = image->width - 1; y >= 0; y--)
     {
         for (uint32_t x = 0; x < image->width; x++)
         {
-            switch (image->infoHeader->bitDepth)
+            switch (bitDepth)
             {
                 case 16:
                     writeData(image->colorMatrix->matrix[y][x]->r, "colorComponent: r");

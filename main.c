@@ -13,7 +13,7 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    bmpImage* dest = createBMPImage(src->width, src->height, 24);
+    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 24, BITMAPCOREHEADER);
     oilGrFill(dest->colorMatrix, color(0, 0, 0, 0));
     oilColorMatrixCopy(src->colorMatrix, dest->colorMatrix);
 

@@ -26,6 +26,13 @@ static uint32_t bmp_compression_cmyk            = 11;
 static uint32_t bmp_compression_cmyk_rle8       = 12;
 static uint32_t bmp_compression_cmyk_rle4       = 13;
 
+typedef enum {
+    BITMAPCOREHEADER,
+    BITMAPINFOHEADER,
+    BITMAPV4HEADER
+
+} bmpHeaderType;
+
 typedef struct {
     uint16_t signature;
     uint32_t fileSize;
@@ -33,15 +40,26 @@ typedef struct {
     uint16_t reserved1;
     uint16_t reserved2;
 
-    uint32_t  offsetBytes;
+    uint32_t offsetBytes;
 
 } bmpFileHeader;
 
 typedef struct {
     uint32_t headerSize;
 
-    //uint32_t width;
-    //uint32_t height;
+    uint16_t width;
+    uint16_t height;
+
+    uint16_t planes;
+    uint16_t bitDepth;
+
+} bmpCoreHeader;
+
+typedef struct {
+    uint32_t headerSize;
+
+    uint32_t width;
+    uint32_t height;
 
     uint16_t planes;
 
@@ -58,12 +76,31 @@ typedef struct {
 
 } bmpInfoHeader;
 
+typedef struct {
+    uint32_t headerSize;
+
+} bmpV4Header;
+
+typedef struct {
+    bmpHeaderType headerType;
+    void* header;
+
+} bmpImageData;
+
 static const size_t bmpFileHeaderSize
             = sizeof(uint16_t)   //signature
             + sizeof(uint32_t)   //fileSize
             + sizeof(uint16_t)   //reserved1
             + sizeof(uint16_t)   //reserved2
             + sizeof(uint32_t);  //offsetBytes
+
+static const size_t bmpCoreHeaderSize
+            = sizeof(uint32_t)   //headerSize
+            + sizeof(uint16_t)   //width
+            + sizeof(uint16_t)   //height
+            + sizeof(uint16_t)   //planes
+            + sizeof(uint16_t);  //bitsPerPixels
+
 
 static const size_t bmpInfoHeaderSize
             = sizeof(uint32_t)  //header size
@@ -78,9 +115,11 @@ static const size_t bmpInfoHeaderSize
             + sizeof(uint32_t)  //colorsUsed
             + sizeof(uint32_t); //colorsImportant
 
+static const size_t bmpV4HeaderSize;
+
 typedef struct {
     bmpFileHeader* fileHeader;
-    bmpInfoHeader* infoHeader;
+    bmpImageData* imageData;
 
     uint32_t width;
     uint32_t height;
@@ -89,7 +128,8 @@ typedef struct {
 
 } bmpImage;
 
-bmpImage* createBMPImage(uint32_t width, uint32_t height, uint16_t bitDepth);
+bmpImage* oilBMPCreateImage(uint16_t width, uint16_t height, uint16_t bitDepth);
+bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType);
 
 uint8_t oilBMPSave(bmpImage* image, char* fileName);
 //bmpImage* oilBMPLoad(char* filename);
