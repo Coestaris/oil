@@ -29,6 +29,7 @@ pngImage *oilCreateImg(void)
     img->pixelsInfo->ppuY = 0;
     img->pixelsInfo->ppuX = 0;
     img->pixelsInfo->gammaSet = 0;
+    img->pixelsInfo->palette = NULL;
 
     img->imageData = malloc(sizeof(pngImageData));
     img->imageData->txtItems = NULL;
@@ -58,7 +59,7 @@ void getImageColors(pngImage *image, size_t *byteCounter, uint8_t *data, size_t 
 
         if (image->pixelsInfo->usePalette)
         {
-            color = &image->pixelsInfo->palette[png_get_next_byte];
+            color = image->pixelsInfo->palette[png_get_next_byte];
         }
         else
         {
@@ -122,7 +123,7 @@ void filterData(pngImage* image, uint8_t* output, uint8_t bytesPerColor, size_t 
             int c = (i != 0 && color != 0) ? (output[((i - 1) * bytesPerColor * image->width + i) + (color - 1)* bytesPerColor + component]) : (0);
 
             output[(i * bytesPerColor * image->width + i + 1) + color * bytesPerColor + component] = filterFunc(x, a, b, c);
-            printf("x: %i, a: %i, b: %i, c: %i\n", x, a, b, c);
+            //printf("x: %i, a: %i, b: %i, c: %i\n", x, a, b, c);
         }
     }
 }
@@ -315,7 +316,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
         image->pixelsInfo->palette = malloc(sizeof(oilColor) * image->pixelsInfo->paletteLen);
         for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
         {
-            image->pixelsInfo->palette[i] = colorp(chunk->data[i * 3], chunk->data[i * 3 + 1], chunk->data[i * 3 + 2], 0xFF);
+            image->pixelsInfo->palette[i] = ocolorp(chunk->data[i * 3], chunk->data[i * 3 + 1], chunk->data[i * 3 + 2], 0xFF);
         }
     }
     else if (chunk->type == png_chunk_gAMA)
@@ -343,7 +344,7 @@ int oilProceedChunk(pngImage *image, pngChunk *chunk, int simplified)
     {
         if(simplified) return 1;
 
-        image->pixelsInfo->bkgColor = colorp(0, 0, 0, 0);
+        image->pixelsInfo->bkgColor = ocolorp(0, 0, 0, 0);
         switch (image->pixelsInfo->colorFlag)
         {
             case 0:

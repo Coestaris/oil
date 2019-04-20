@@ -22,8 +22,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpCoreHeader));
             bmpCoreHeader* header = image->imageData->header;
-            header->headerSize = bmpCoreHeaderSize;
-            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpCoreHeaderSize;
+            header->headerSize = (uint32_t)bmpCoreHeaderSize;
+            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpCoreHeaderSize);
             break;
         }
 
@@ -31,8 +31,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpInfoHeader));
             bmpInfoHeader* header = image->imageData->header;
-            header->headerSize = bmpInfoHeaderSize;
-            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpInfoHeaderSize;
+            header->headerSize = (uint32_t)bmpInfoHeaderSize;
+            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpInfoHeaderSize);
             break;
         }
 
@@ -40,8 +40,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpV4Header));
             bmpV4Header* header = image->imageData->header;
-            header->headerSize = bmpV4HeaderSize;
-            image->fileHeader->offsetBytes = bmpFileHeaderSize + bmpV4HeaderSize;
+            header->headerSize = (uint32_t)bmpV4HeaderSize;
+            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpV4HeaderSize);
             break;
         }
     }
@@ -189,6 +189,10 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     }
 
     int toPad = (4 - (image->width * 3) % 4) % 4;
+
+    uint8_t  paddingBytes1;
+    uint16_t paddingBytes2;
+
     for(int32_t y = image->width - 1; y >= 0; y--)
     {
         for (uint32_t x = 0; x < image->width; x++)
@@ -204,9 +208,9 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
                 case 8:
                 default:
                 {
-                    uint8_t r = (uint8_t) image->colorMatrix->matrix[y][x]->r;
-                    uint8_t g = (uint8_t) image->colorMatrix->matrix[y][x]->g;
-                    uint8_t b = (uint8_t) image->colorMatrix->matrix[y][x]->b;
+                    uint8_t r = (uint8_t)image->colorMatrix->matrix[y][x]->r;
+                    uint8_t g = (uint8_t)image->colorMatrix->matrix[y][x]->g;
+                    uint8_t b = (uint8_t)image->colorMatrix->matrix[y][x]->b;
 
                     writeData(b, "colorComponent: b");
                     writeData(g, "colorComponent: g");
@@ -218,9 +222,20 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
 
         }
 
-        uint8_t padding = 0;
-        for (int i = 0; i < toPad; i++)
-            writeData(padding, "colorComponent: padding");
+        switch(toPad)
+        {
+            case 1:
+            default:
+                writeData(paddingBytes1, "paddingBytes");
+                break;
+            case 2:
+                writeData(paddingBytes2, "paddingBytes");
+                break;
+            case 3:
+                writeData(paddingBytes1, "paddingBytes");
+                writeData(paddingBytes2, "paddingBytes");
+                break;
+        }
     }
 
     if(fclose(f) == -1)

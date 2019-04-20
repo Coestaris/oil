@@ -208,7 +208,7 @@ GLuint oilGetTexture(imageData* data)
     GLuint id = 0;
 
     glGenTextures(1, &id);
-    if((error = glGetError()) != GL_NO_ERROR || id == 0)
+    if(((error = glGetError()) != GL_NO_ERROR || id == 0) && error != 1282)
     {
         oilPushErrorf("[OILERROR]: Unable to generate texture. Gl error: %s (errno %i)\n", gluErrorString(error), error);
         return 0;
@@ -271,7 +271,7 @@ GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dat
     }
 
     oilFreeImageData(data);
-    oilPNGFreeImage(image);
+    //oilPNGFreeImage(image);
 
     return tex;
 }

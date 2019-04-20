@@ -9,6 +9,8 @@
 #include <malloc.h>
 #include <string.h>
 
+#include "oilerror.h"
+
 typedef struct
 {
     uint16_t r;
@@ -30,7 +32,7 @@ void oilColorMatrixFree(colorMatrix* matrix);
 void oilPrintColor(oilColor *color, uint8_t hex);
 colorMatrix* oilColorMatrixCopy(colorMatrix* src, colorMatrix* dest);
 
-oilColor color(uint16_t r, uint16_t g, uint16_t b, uint16_t a);
-oilColor* colorp(uint16_t r, uint16_t g, uint16_t b, uint16_t a);
+oilColor ocolor(uint16_t r, uint16_t g, uint16_t b, uint16_t a);
+oilColor* ocolorp(uint16_t r, uint16_t g, uint16_t b, uint16_t a);
 
 #endif //OIL_COMMON_H

@@ -16,7 +16,7 @@ colorMatrix* oilColorMatrixAlloc(uint8_t allocColors, uint32_t width, uint32_t h
         {
             for (uint32_t j = 0; j < width; j++)
             {
-                matrix->matrix[i][j] = colorp(0, 0, 0, 0);
+                matrix->matrix[i][j] = ocolorp(0, 0, 0, 0);
             }
         }
     }
@@ -47,13 +47,13 @@ void oilPrintColor(oilColor *color, uint8_t hex)
         printf("RGBA(%.3i, %.3i, %.3i, %.3i)", color->r, color->g, color->b, color->a);
 }
 
-oilColor color(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
+oilColor ocolor(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
 {
     oilColor c = { r, g, b, a };
     return c;
 }
 
-oilColor* colorp(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
+oilColor* ocolorp(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
 {
     oilColor* c = malloc(sizeof(oilColor));
     c->r = r; c->g = g; c->b = b; c->a = a;

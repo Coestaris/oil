@@ -1,3 +1,4 @@
+/*
 //
 // Created by maxim on 3/18/19.
 //
@@ -7,17 +8,17 @@
 int main(int argc, char** argv)
 {
     pngImage* src;
-    if(!(src = oilPNGLoad("sample2.png", 1)))
+    if(!(src = oilPNGLoad("bullet.png", 1)))
     {
         oilPrintError();
         exit(EXIT_FAILURE);
     }
 
-    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 24, BITMAPCOREHEADER);
+    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 24, BITMAPINFOHEADER);
     oilGrFill(dest->colorMatrix, color(0, 0, 0, 0));
-    oilColorMatrixCopy(src->colorMatrix, dest->colorMatrix);
+    //oilColorMatrixCopy(src->colorMatrix, dest->colorMatrix);
 
-    //dest->colorMatrix = dest->colorMatrix;
+    dest->colorMatrix = src->colorMatrix;
 
 
     for(uint32_t y = 0; y < src->height; y++) {
@@ -45,4 +46,4 @@ int main(int argc, char** argv)
     oilPNGFreeImage(src);
     oilBMPFreeImage(dest);
     return 0;
-}
+}*/
