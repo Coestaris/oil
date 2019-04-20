@@ -193,7 +193,7 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
     uint8_t  paddingBytes1;
     uint16_t paddingBytes2;
 
-    for(int32_t y = image->width - 1; y >= 0; y--)
+    for(int32_t y = image->height - 1; y >= 0; y--)
     {
         for (uint32_t x = 0; x < image->width; x++)
         {

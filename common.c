@@ -30,7 +30,7 @@ void oilColorMatrixFree(colorMatrix* matrix)
 {
     for(uint32_t i = 0; i < matrix->height; i++)
     {
-        for(uint32_t j = 0; j < matrix->height; j++)
+        for(uint32_t j = 0; j < matrix->width; j++)
             free(matrix->matrix[i][j]);
         free(matrix->matrix[i]);
     }

@@ -271,7 +271,7 @@ GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dat
     }
 
     oilFreeImageData(data);
-    //oilPNGFreeImage(image);
+    oilPNGFreeImage(image);
 
     return tex;
 }
