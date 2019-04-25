@@ -162,8 +162,8 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
         {
             bmpCoreHeader* header = image->imageData->header;
             writeData(header->headerSize,       "infoHeader : headerSize");
-            writeData(header->width,             "infoHeader : width");
-            writeData(header->height,            "infoHeader : height");
+            writeData(header->width,            "infoHeader : width");
+            writeData(header->height,           "infoHeader : height");
             writeData(header->planes,           "infoHeader : planes");
             writeData(header->bitDepth,         "infoHeader : bitDepth");
             bitDepth = header->bitDepth;
@@ -225,7 +225,6 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
         switch(toPad)
         {
             case 1:
-            default:
                 writeData(paddingBytes1, "paddingBytes");
                 break;
             case 2:

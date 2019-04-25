@@ -33,6 +33,7 @@ pngImage *oilCreateImg(void)
 
     img->imageData = malloc(sizeof(pngImageData));
     img->imageData->txtItems = NULL;
+    img->imageData->rawData = NULL;
     img->imageData->time = NULL;
 
     img->colorMatrix = NULL;
@@ -162,7 +163,6 @@ uint8_t filterPaeth(int x, int a, int b, int c)
 
 int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
 {
-
 #ifdef OILDEBUG_PRINT_COMPRESSED_DATA
     printf("[OILDEBUG]: Compressed image data (%li bytes):\n", length);
     for(int i = 0; i < length; i++) {
@@ -172,6 +172,22 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     putchar('\n');
 #endif
 
+    if (!image->imageData->rawData)
+    {
+        image->imageData->rawDataLength = length;
+        image->imageData->rawData = malloc(length);
+        memcpy(image->imageData->rawData, data, length);
+    }
+    else
+    {
+        image->imageData->rawData = realloc(image->imageData->rawData, image->imageData->rawDataLength + length);
+        memcpy(image->imageData->rawData + image->imageData->rawDataLength, data, length);
+        image->imageData->rawDataLength += length;
+    }
+}
+
+uint8_t proceedImageData(pngImage* image)
+{
     uint8_t bytesPerColor = 0;
     if (image->pixelsInfo->usePalette)
     {
@@ -192,20 +208,16 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     }
 
     size_t outputLen = bytesPerColor * image->width * image->height + image->height;
-
-    //printf("length: %d\n", outputLen);
-
-    uint8_t *output = malloc(outputLen);
-    memset(output, 0, outputLen);
+    uint8_t* output = malloc(sizeof(uint8_t) * outputLen);
 
     z_stream infstream;
     infstream.zalloc = Z_NULL;
     infstream.zfree = Z_NULL;
     infstream.opaque = Z_NULL;
 
-    infstream.avail_in = (uInt) length;
-    infstream.next_in = data;
-    infstream.avail_out = (uInt) outputLen - 1;
+    infstream.avail_in = (uInt) image->imageData->rawDataLength;
+    infstream.next_in = image->imageData->rawData;
+    infstream.avail_out = (uInt)outputLen - 1;
     infstream.next_out = output;
 
     inflateInit(&infstream);
@@ -223,9 +235,10 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
 
 #ifdef OILDEBUG_PRINT_DECOMPRESSED_DATA
     printf("[OILDEBUG]: Decompressed image data (%li bytes):\n", outputLen);
-    for(int i = 0; i < outputLen; i++) {
+    for (int i = 0; i < outputLen; i++)
+    {
         printf("%.2X ", output[i]);
-        if((i + 1) % 30 == 0) putchar('\n');
+        if ((i + 1) % 30 == 0) putchar('\n');
     }
     putchar('\n');
 #endif
@@ -236,8 +249,6 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
     for (size_t i = 0; i < image->height; i++)
     {
         int filtType = output[byteCounter++];
-
-
 
 #ifdef OILDEBUG_PRINT_SCANLINES
         printf("[OILDEBUG]: Reading scanline #%li, filtType: %i\n", i, filtType);
@@ -497,6 +508,7 @@ int oilLoadImage(char *fileName, pngImage** image, int simplified)
         if (fread(buff4, sizeof(buff4), 1, f) != 1)
         {
             oilPushErrorf("[OILERROR]: Unable to read chunk crc at position %i\n", ftell(f));
+            free(chunk->data);
             free(chunk);
             oilPNGFreeImage(*image);
             return 0;
@@ -531,7 +543,18 @@ int oilLoadImage(char *fileName, pngImage** image, int simplified)
         }
     }
 
+
+    free(chunk->data);
     free(chunk);
+
+    if(!proceedImageData(*image)) {
+        oilPushError("[OILERROR]: Unable to proceed chunk\n");
+        free((*image)->imageData->rawData);
+        oilPNGFreeImage(*image);
+        return 0;
+    }
+
+    free((*image)->imageData->rawData);
 
     if (fclose(f))
     {
@@ -551,7 +574,6 @@ pngImage* oilPNGLoad(char *fileName, int simplified)
         return img;
     }
 }
-
 
 void oilPNGFreeImage(pngImage *image)
 {

@@ -15,12 +15,12 @@
 #include "oilerror.h"
 #include "crc32.h"
 
-#define OIL_DONT_IGNORE_CHUNKS
+//#define OIL_DONT_IGNORE_CHUNKS
 
 #define OILDEBUG_PRINT_CHUNK_NAMES
 //#define OILDEBUG_PRINT_COMPRESSED_DATA
-#define OILDEBUG_PRINT_DECOMPRESSED_DATA
-#define OILDEBUG_PRINT_SCANLINES
+//#define OILDEBUG_PRINT_DECOMPRESSED_DATA
+//#define OILDEBUG_PRINT_SCANLINES
 
 static uint8_t png_signature[8] = {
     0x89,             // Non ASCII symbol
@@ -122,6 +122,10 @@ typedef struct {
     int txtItemsCount;
     pngText* txtItems;
     pngTime* time;
+
+    size_t rawDataLength;
+    uint8_t* rawData;
+
 } pngImageData;
 
 typedef struct
