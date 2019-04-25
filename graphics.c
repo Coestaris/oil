@@ -208,7 +208,7 @@ GLuint oilGetTexture(imageData* data)
     GLuint id = 0;
 
     glGenTextures(1, &id);
-    if(((error = glGetError()) != GL_NO_ERROR || id == 0) && error != 1282)
+    if(((error = glGetError()) != GL_NO_ERROR || id == 0))
     {
         oilPushErrorf("[OILERROR]: Unable to generate texture. Gl error: %s (errno %i)\n", gluErrorString(error), error);
         return 0;
@@ -237,11 +237,21 @@ GLuint oilGetTexture(imageData* data)
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if(((error = glGetError()) != GL_NO_ERROR))
+    {
+        oilPushErrorf("[OILERROR]: Unable to set tex parameter. Gl error: %s (errno %i)\n", gluErrorString(error), error);
+        return 0;
+    }
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if(((error = glGetError()) != GL_NO_ERROR))
+    {
+        oilPushErrorf("[OILERROR]: Unable to set tex parameter. Gl error: %s (errno %i)\n", gluErrorString(error), error);
+        return 0;
+    }
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    return 1;
+    return id;
 }
 
 GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat)

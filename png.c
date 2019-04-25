@@ -122,8 +122,10 @@ void filterData(pngImage* image, uint8_t* output, uint8_t bytesPerColor, size_t 
             int b = (i != 0)     ? (output[((i - 1) * bytesPerColor * image->width + i) + color * bytesPerColor + component]) : (0);
             int c = (i != 0 && color != 0) ? (output[((i - 1) * bytesPerColor * image->width + i) + (color - 1)* bytesPerColor + component]) : (0);
 
-            output[(i * bytesPerColor * image->width + i + 1) + color * bytesPerColor + component] = filterFunc(x, a, b, c);
-            //printf("x: %i, a: %i, b: %i, c: %i\n", x, a, b, c);
+            int z = (i * bytesPerColor * image->width + i + 1) + color * bytesPerColor + component;
+            //printf("index try: %d, b: %d\n", z, ((i - 1) * bytesPerColor * image->width + i) + color * bytesPerColor + component);
+            output[z] = filterFunc(x, a, b, c);
+            //printf("x: %5i, a: %5i, b: %5i, c: %5i\n", x, a, b, c);
         }
     }
 }
@@ -189,7 +191,9 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
         bytesPerColor += image->pixelsInfo->bitDepth / 8;
     }
 
-    size_t outputLen = bytesPerColor * image->width * image->height + image->height - 1;
+    size_t outputLen = bytesPerColor * image->width * image->height + image->height;
+
+    //printf("length: %d\n", outputLen);
 
     uint8_t *output = malloc(outputLen);
     memset(output, 0, outputLen);
@@ -201,7 +205,7 @@ int oilProceedIDAT(pngImage *image, uint8_t *data, size_t length)
 
     infstream.avail_in = (uInt) length;
     infstream.next_in = data;
-    infstream.avail_out = (uInt) outputLen;
+    infstream.avail_out = (uInt) outputLen - 1;
     infstream.next_out = output;
 
     inflateInit(&infstream);

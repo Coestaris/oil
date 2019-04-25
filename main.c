@@ -1,4 +1,3 @@
-//
 // Created by maxim on 3/18/19.
 //
 
@@ -7,7 +6,7 @@
 int main(int argc, char** argv)
 {
     pngImage* src;
-    if(!(src = oilPNGLoad("box.png", 1)))
+    if(!(src = oilPNGLoad("concrete.png", 1)))
     {
         oilPrintError();
         exit(EXIT_FAILURE);
