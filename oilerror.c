@@ -6,6 +6,14 @@
 
 char* error;
 
+void oilPrintError()
+{
+    char* __err = oilGetError();
+    if(__err == NULL) puts("no errors");
+    else puts(__err);
+    oilClearError();
+}
+
 void oilClearError(void)
 {
     free(error);

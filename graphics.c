@@ -202,11 +202,18 @@ void oilFreeImageData(imageData* data)
     free(data);
 }
 
-GLuint oilGetTexture(imageData* data)
+#define checkGLError(str)  if((error = glGetError()) != GL_NO_ERROR) \
+            { \
+                oilPushErrorf("[OILERROR]: "str". Gl error: %s (errno %i)\n", gluErrorString(error), error);\
+                return 0;\
+            }
+
+GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor)
 {
     GLenum error;
     GLuint id = 0;
 
+    glEnable(GL_TEXTURE_2D);
     glGenTextures(1, &id);
     if(((error = glGetError()) != GL_NO_ERROR || id == 0))
     {
@@ -215,11 +222,7 @@ GLuint oilGetTexture(imageData* data)
     }
 
     glBindTexture(GL_TEXTURE_2D, id);
-    if((error = glGetError()) != GL_NO_ERROR)
-    {
-        oilPushErrorf("[OILERROR]: Unable to bind texture. Gl error: %s (errno %i)\n", gluErrorString(error), error);
-        return 0;
-    }
+    checkGLError("Unable to bind texture");
 
     glTexImage2D(GL_TEXTURE_2D,
             0,
@@ -230,31 +233,46 @@ GLuint oilGetTexture(imageData* data)
             data->componentFormat,
             data->dataFormat,
             data->data);
-    if((error = glGetError()) != GL_NO_ERROR)
+    checkGLError("Unable to fill texture data");
+    if(minFilter == GL_LINEAR_MIPMAP_LINEAR   ||
+       minFilter == GL_LINEAR_MIPMAP_NEAREST  ||
+       minFilter == GL_NEAREST_MIPMAP_LINEAR  ||
+       minFilter == GL_NEAREST_MIPMAP_NEAREST ||
+       magFilter == GL_LINEAR_MIPMAP_LINEAR   ||
+       magFilter == GL_LINEAR_MIPMAP_NEAREST  ||
+       magFilter == GL_NEAREST_MIPMAP_LINEAR  ||
+       magFilter == GL_NEAREST_MIPMAP_NEAREST)
     {
-        oilPushErrorf("[OILERROR]: Unable fill texture with data. Gl error: %s (errno %i)\n", gluErrorString(error), error);
-        return 0;
+        glGenerateMipmap(GL_TEXTURE_2D);
+        checkGLError("Unable to generate mipmap");
     }
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    if(((error = glGetError()) != GL_NO_ERROR))
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+    checkGLError("Unable to set tex parameter (wrapping");
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapping);
+    checkGLError("Unable to set tex parameter (wrapping");
+
+    if(wrapping == GL_CLAMP_TO_BORDER && borderColor)
     {
-        oilPushErrorf("[OILERROR]: Unable to set tex parameter. Gl error: %s (errno %i)\n", gluErrorString(error), error);
-        return 0;
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+        checkGLError("Unable to set tex parameter (border color");
     }
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    if(((error = glGetError()) != GL_NO_ERROR))
-    {
-        oilPushErrorf("[OILERROR]: Unable to set tex parameter. Gl error: %s (errno %i)\n", gluErrorString(error), error);
-        return 0;
-    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    checkGLError("Unable to set tex parameter (min filter)");
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+    checkGLError("Unable to set tex parameter (mag filter)");
+
     glBindTexture(GL_TEXTURE_2D, 0);
+    checkGLError("Unable to unbind texture");
 
     return id;
 }
 
-GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat)
+GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat,
+                          GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor)
+
 {
     pngImage* image;
     if(!(image = oilPNGLoad(filename, 1)))
@@ -271,7 +289,7 @@ GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dat
         return 0;
     }
 
-    GLuint tex = oilGetTexture(data);
+    GLuint tex = oilGetTexture(data, wrapping, magFilter, minFilter, borderColor);
     if(tex == 0)
     {
         oilPushError("[OILERROR]: Unable to generate texture");

@@ -12,8 +12,7 @@
 
 #define MAX_ERRORF_LEN 1000
 
-#define oilPrintError() {char* __err = oilGetError(); if(__err == NULL) puts("no errors"); else puts(__err); oilClearError(); };
-
+void oilPrintError(void);
 char* oilGetError(void);
 void oilClearError(void);
 void oilPushError(char* error);
