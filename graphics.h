@@ -26,8 +26,9 @@ typedef struct {
 
 #define GL_AUTO -1
 
-GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat,
-                          GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor);
+GLuint oilTextureFromPngFileDef(char *filename, uint32_t componentFormat);
+GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t dataFormat,
+                             GLenum wrapping, GLenum magFilter, GLenum minFilter, float *borderColor);
 
 GLuint oilGetTexture(imageData* img, GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor);
 void oilFreeImageData(imageData* data);

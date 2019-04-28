@@ -270,8 +270,15 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
     return id;
 }
 
-GLuint oilTextureFromFile(char* filename, uint32_t componentFormat, uint32_t dataFormat,
-                          GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor)
+GLuint oilTextureFromPngFileDef(char* fileName, uint32_t componentFormat)
+{
+    return oilTextureFromPngFile(fileName, componentFormat,
+            GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
+            NULL);
+}
+
+GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t dataFormat,
+                             GLenum wrapping, GLenum magFilter, GLenum minFilter, float *borderColor)
 
 {
     pngImage* image;
