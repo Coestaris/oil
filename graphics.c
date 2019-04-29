@@ -213,7 +213,8 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
     GLenum error;
     GLuint id = 0;
 
-    glEnable(GL_TEXTURE_2D);
+    int gl = glGetError();
+
     glGenTextures(1, &id);
     if(((error = glGetError()) != GL_NO_ERROR || id == 0))
     {
@@ -234,6 +235,7 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
             data->dataFormat,
             data->data);
     checkGLError("Unable to fill texture data");
+    
     if(minFilter == GL_LINEAR_MIPMAP_LINEAR   ||
        minFilter == GL_LINEAR_MIPMAP_NEAREST  ||
        minFilter == GL_NEAREST_MIPMAP_LINEAR  ||
