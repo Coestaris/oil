@@ -359,13 +359,21 @@ void oilGrFlipX(colorMatrix* matrix)
 {
     for(uint32_t i = 0; i < matrix->height; i++)
         for(uint32_t j = 0; j < matrix->width; j++)
-            *matrix->matrix[i][j] = *matrix->matrix[i][matrix->width - j - 1];
+        {
+            oilColor* tmp = matrix->matrix[i][j]; 
+            matrix->matrix[i][j] = matrix->matrix[i][matrix->width - j - 1];
+            matrix->matrix[i][matrix->width - j - 1] = tmp;
+        }
 }
 
 void oilGrFlipY(colorMatrix* matrix)
 {
     for(uint32_t i = 0; i < matrix->height; i++)
         for(uint32_t j = 0; j < matrix->width; j++)
-            *matrix->matrix[i][j] = *matrix->matrix[matrix->height - i - 1][j];
+        {
+            oilColor* tmp = matrix->matrix[i][j]; 
+            matrix->matrix[i][j] = matrix->matrix[matrix->height - i - 1][j];
+            matrix->matrix[matrix->height - i - 1][j] = tmp;
+        }
 
 }
