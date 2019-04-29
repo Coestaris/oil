@@ -8,6 +8,7 @@ void writeComponent(uint8_t* data, size_t* byteCounter, uint32_t dataFormat, uin
 {
     switch(dataFormat)
     {
+        default:
         case GL_UNSIGNED_BYTE:
             data[(*byteCounter)++] = (uint8_t)component;
             break;
@@ -17,12 +18,12 @@ void writeComponent(uint8_t* data, size_t* byteCounter, uint32_t dataFormat, uin
         case GL_UNSIGNED_INT:
         case GL_UNSIGNED_SHORT:
             data[(*byteCounter)++] = (uint8_t)component;
-            data[(*byteCounter)++] = (uint8_t)(component << 8);
+            data[(*byteCounter)++] = (uint8_t)(component << 8U);
             break;
         case GL_SHORT:
         case GL_INT:
             data[(*byteCounter)++] = (int8_t)component;
-            data[(*byteCounter)++] = (int8_t)(component << 8);
+            data[(*byteCounter)++] = (int8_t)(component << 8U);
             break;
     }
 }
@@ -54,6 +55,7 @@ void writeColor(uint8_t* data, size_t* byteCounter, oilColor* color, uint32_t co
             wrComponent(color->r);
             break;
 
+        default:
         case GL_RGBA:
             wrComponent(color->r);
             wrComponent(color->g);
@@ -213,8 +215,6 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
     GLenum error;
     GLuint id = 0;
 
-    int gl = glGetError();
-
     glGenTextures(1, &id);
     if(((error = glGetError()) != GL_NO_ERROR || id == 0))
     {
@@ -223,7 +223,7 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
     }
 
     glBindTexture(GL_TEXTURE_2D, id);
-    checkGLError("Unable to bind texture");
+    checkGLError("Unable to bind texture")
 
     glTexImage2D(GL_TEXTURE_2D,
             0,
@@ -234,7 +234,7 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
             data->componentFormat,
             data->dataFormat,
             data->data);
-    checkGLError("Unable to fill texture data");
+    checkGLError("Unable to fill texture data")
     
     if(minFilter == GL_LINEAR_MIPMAP_LINEAR   ||
        minFilter == GL_LINEAR_MIPMAP_NEAREST  ||
@@ -246,43 +246,48 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
        magFilter == GL_NEAREST_MIPMAP_NEAREST)
     {
         glGenerateMipmap(GL_TEXTURE_2D);
-        checkGLError("Unable to generate mipmap");
+        checkGLError("Unable to generate mipmap")
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
-    checkGLError("Unable to set tex parameter (wrapping");
+    checkGLError("Unable to set tex parameter (wrapping")
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapping);
-    checkGLError("Unable to set tex parameter (wrapping");
+    checkGLError("Unable to set tex parameter (wrapping")
 
     if(wrapping == GL_CLAMP_TO_BORDER && borderColor)
     {
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        checkGLError("Unable to set tex parameter (border color");
+        checkGLError("Unable to set tex parameter (border color")
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-    checkGLError("Unable to set tex parameter (min filter)");
+    checkGLError("Unable to set tex parameter (min filter)")
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-    checkGLError("Unable to set tex parameter (mag filter)");
+    checkGLError("Unable to set tex parameter (mag filter)")
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    checkGLError("Unable to unbind texture");
+    checkGLError("Unable to unbind texture")
 
     return id;
 }
 
 GLuint oilTextureFromPngFileDef(char* fileName, uint32_t componentFormat)
 {
-    return oilTextureFromPngFile(fileName, componentFormat,
-            GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
-            NULL);
+    texData data;
+    return oilTextureFromPngFile(fileName, componentFormat, 0, data);
 }
 
-GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t dataFormat,
-                             GLenum wrapping, GLenum magFilter, GLenum minFilter, float *borderColor)
-
+GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData texData)
 {
+    if(!(flags & OIL_TEX_MIN))          texData.minFilter = OIL_DEFAULT_MIN;
+    if(!(flags & OIL_TEX_MAG))          texData.magFilter = OIL_DEFAULT_MAG;
+    if(!(flags & OIL_TEX_BORDERCOLOR))  texData.borderColor = OIL_DEFAULT_BORDERCOLOR;
+    if(!(flags & OIL_TEX_DATAFRMT))     texData.dataFormat= OIL_DEFAULT_DATAFMT;
+    if(!(flags & OIL_TEX_FLIPX))        texData.flipX= OIL_DEFAULT_FLIPX;
+    if(!(flags & OIL_TEX_FLIPY))        texData.flipY= OIL_DEFAULT_FLIPY;
+    if(!(flags & OIL_TEX_WRAPPING))     texData.wrappingMode = OIL_DEFAULT_WRAPPING;
+
     pngImage* image;
     if(!(image = oilPNGLoad(filename, 1)))
     {
@@ -290,7 +295,10 @@ GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t 
         return 0;
     }
 
-    imageData* data = oilGetPNGImageData(image, componentFormat, dataFormat);
+    if(texData.flipX) oilGrFlipX(image->colorMatrix);
+    if(texData.flipY) oilGrFlipY(image->colorMatrix);
+
+    imageData* data = oilGetPNGImageData(image, componentFormat, texData.dataFormat);
     if(data == NULL)
     {
         oilPushError("[OILERROR]: Unable to get image data");
@@ -298,7 +306,8 @@ GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t 
         return 0;
     }
 
-    GLuint tex = oilGetTexture(data, wrapping, magFilter, minFilter, borderColor);
+    GLuint tex = oilGetTexture(data, texData.wrappingMode, texData.magFilter,
+            texData.minFilter, texData.borderColor);
     if(tex == 0)
     {
         oilPushError("[OILERROR]: Unable to generate texture");
@@ -344,4 +353,19 @@ oilColor oilGrGetPixel(colorMatrix* matrix, uint32_t x, uint32_t y)
 #endif
 
     return *matrix->matrix[y][x];
+}
+
+void oilGrFlipX(colorMatrix* matrix)
+{
+    for(uint32_t i = 0; i < matrix->height; i++)
+        for(uint32_t j = 0; j < matrix->width; j++)
+            *matrix->matrix[i][j] = *matrix->matrix[i][matrix->width - j - 1];
+}
+
+void oilGrFlipY(colorMatrix* matrix)
+{
+    for(uint32_t i = 0; i < matrix->height; i++)
+        for(uint32_t j = 0; j < matrix->width; j++)
+            *matrix->matrix[i][j] = *matrix->matrix[matrix->height - i - 1][j];
+
 }
