@@ -275,18 +275,18 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
 GLuint oilTextureFromPngFileDef(char* fileName, uint32_t componentFormat)
 {
     texData data;
-    return oilTextureFromPngFile(fileName, componentFormat, 0, data);
+    return oilTextureFromPngFile(fileName, componentFormat, 0, &data);
 }
 
-GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData texData)
+GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData* texData)
 {
-    if(!(flags & OIL_TEX_MIN))          texData.minFilter = OIL_DEFAULT_MIN;
-    if(!(flags & OIL_TEX_MAG))          texData.magFilter = OIL_DEFAULT_MAG;
-    if(!(flags & OIL_TEX_BORDERCOLOR))  texData.borderColor = OIL_DEFAULT_BORDERCOLOR;
-    if(!(flags & OIL_TEX_DATAFRMT))     texData.dataFormat= OIL_DEFAULT_DATAFMT;
-    if(!(flags & OIL_TEX_FLIPX))        texData.flipX= OIL_DEFAULT_FLIPX;
-    if(!(flags & OIL_TEX_FLIPY))        texData.flipY= OIL_DEFAULT_FLIPY;
-    if(!(flags & OIL_TEX_WRAPPING))     texData.wrappingMode = OIL_DEFAULT_WRAPPING;
+    if(!(flags & OIL_TEX_MIN))          texData->minFilter = OIL_DEFAULT_MIN;
+    if(!(flags & OIL_TEX_MAG))          texData->magFilter = OIL_DEFAULT_MAG;
+    if(!(flags & OIL_TEX_BORDERCOLOR))  texData->borderColor = OIL_DEFAULT_BORDERCOLOR;
+    if(!(flags & OIL_TEX_DATAFRMT))     texData->dataFormat= OIL_DEFAULT_DATAFMT;
+    if(!(flags & OIL_TEX_FLIPX))        texData->flipX= OIL_DEFAULT_FLIPX;
+    if(!(flags & OIL_TEX_FLIPY))        texData->flipY= OIL_DEFAULT_FLIPY;
+    if(!(flags & OIL_TEX_WRAPPING))     texData->wrappingMode = OIL_DEFAULT_WRAPPING;
 
     pngImage* image;
     if(!(image = oilPNGLoad(filename, 1)))
@@ -295,10 +295,10 @@ GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t 
         return 0;
     }
 
-    if(texData.flipX) oilGrFlipX(image->colorMatrix);
-    if(texData.flipY) oilGrFlipY(image->colorMatrix);
+    if(texData->flipX) oilGrFlipX(image->colorMatrix);
+    if(texData->flipY) oilGrFlipY(image->colorMatrix);
 
-    imageData* data = oilGetPNGImageData(image, componentFormat, texData.dataFormat);
+    imageData* data = oilGetPNGImageData(image, componentFormat, texData->dataFormat);
     if(data == NULL)
     {
         oilPushError("[OILERROR]: Unable to get image data");
@@ -306,8 +306,11 @@ GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t 
         return 0;
     }
 
-    GLuint tex = oilGetTexture(data, texData.wrappingMode, texData.magFilter,
-            texData.minFilter, texData.borderColor);
+    texData->out_width = image->width;
+    texData->out_height = image->height;
+
+    GLuint tex = oilGetTexture(data, texData->wrappingMode, texData->magFilter,
+            texData->minFilter, texData->borderColor);
     if(tex == 0)
     {
         oilPushError("[OILERROR]: Unable to generate texture");

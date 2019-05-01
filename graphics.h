@@ -51,10 +51,13 @@ typedef struct _texData {
     uint8_t flipX;
     uint8_t flipY;
 
+    uint32_t out_width;
+    uint32_t out_height;
+
 } texData;
 
 GLuint oilTextureFromPngFileDef(char *filename, uint32_t componentFormat);
-GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData data);
+GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData* data);
 
 GLuint oilGetTexture(imageData* img, GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor);
 void oilFreeImageData(imageData* data);
