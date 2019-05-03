@@ -361,9 +361,9 @@ oilColor oilGrGetPixel(colorMatrix* matrix, uint32_t x, uint32_t y)
 void oilGrFlipX(colorMatrix* matrix)
 {
     for(uint32_t i = 0; i < matrix->height; i++)
-        for(uint32_t j = 0; j < matrix->width; j++)
+        for(uint32_t j = 0; j < matrix->width / 2; j++)
         {
-            oilColor* tmp = matrix->matrix[i][j]; 
+            oilColor* tmp = matrix->matrix[i][j];
             matrix->matrix[i][j] = matrix->matrix[i][matrix->width - j - 1];
             matrix->matrix[i][matrix->width - j - 1] = tmp;
         }
@@ -371,10 +371,10 @@ void oilGrFlipX(colorMatrix* matrix)
 
 void oilGrFlipY(colorMatrix* matrix)
 {
-    for(uint32_t i = 0; i < matrix->height; i++)
+    for(uint32_t i = 0; i < matrix->height / 2; i++)
         for(uint32_t j = 0; j < matrix->width; j++)
         {
-            oilColor* tmp = matrix->matrix[i][j]; 
+            oilColor* tmp = matrix->matrix[i][j];
             matrix->matrix[i][j] = matrix->matrix[matrix->height - i - 1][j];
             matrix->matrix[matrix->height - i - 1][j] = tmp;
         }
