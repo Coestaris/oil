@@ -74,6 +74,11 @@ void oilBMPFreeImage(bmpImage* image)
 
 bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType)
 {
+    if(bitDepth != 8 && bitDepth != 16 && bitDepth != 24) {
+        oilPushErrorf("[OILERROR]: %i is wrong bitDepth value", bitDepth);
+        return NULL;
+    }
+
     bmpImage* image = allocImage(bmp_signature_bm, headerType);
     image->colorMatrix = oilColorMatrixAlloc(1, width, height);
 
