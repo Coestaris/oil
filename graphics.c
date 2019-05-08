@@ -212,6 +212,8 @@ void oilFreeImageData(imageData* data)
 
 GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor)
 {
+    glGetError(); //Reset error flag
+
     GLenum error;
     GLuint id = 0;
 
