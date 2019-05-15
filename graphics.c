@@ -300,6 +300,20 @@ GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t 
     if(texData->flipX) oilGrFlipX(image->colorMatrix);
     if(texData->flipY) oilGrFlipY(image->colorMatrix);
 
+    /*oilColor c;
+    c = oilGrGetPixel(image->colorMatrix, 0, 0);
+    oilPrintColor(&c, 0);
+
+    c = oilGrGetPixel(image->colorMatrix, image->width - 1, 0);
+    oilPrintColor(&c, 0);
+
+    c = oilGrGetPixel(image->colorMatrix, 0, image->height - 1);
+    oilPrintColor(&c, 0);
+
+    c = oilGrGetPixel(image->colorMatrix, image->width - 1, image->height - 1);
+    oilPrintColor(&c, 0);*/
+
+
     imageData* data = oilGetPNGImageData(image, componentFormat, texData->dataFormat);
     if(data == NULL)
     {
