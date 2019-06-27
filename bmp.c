@@ -44,6 +44,15 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
             image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpV4HeaderSize);
             break;
         }
+
+        case BITMAPV5HEADER:
+        {
+            image->imageData->header = malloc(sizeof(bmpV5Header));
+            bmpV5Header* header = image->imageData->header;
+            header->headerSize = (uint32_t)bmpV5HeaderSize;
+            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpV5HeaderSize);
+            break;
+        }
     }
 
     image->colorMatrix = NULL;
@@ -122,6 +131,12 @@ bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDept
         case BITMAPV4HEADER:
         {
             bmpV4Header* header = image->imageData->header;
+            break;
+        }
+
+        case BITMAPV5HEADER:
+        {
+            bmpV5Header* header = image->imageData->header;
             break;
         }
     }

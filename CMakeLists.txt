@@ -3,7 +3,7 @@ project(oil C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.h graphics.c graphics.h main.c bmp.c bmp.h common.c common.h)
+add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.h graphics.c graphics.h main.c bmp.c bmp.h common.c common.h bmpSizes.h)
 
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)

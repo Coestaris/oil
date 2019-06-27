@@ -1,15 +1,12 @@
-/*
+//
 // Created by maxim on 3/18/19.
 //
-
-#ifndef ZOMBOID
-
 #include "oil.h"
 
 int main(int argc, char** argv)
 {
     pngImage* src;
-    if(!(src = oilPNGLoad("concrete.png", 1)))
+    if(!(src = oilPNGLoad("menu.png", 1)))
     {
         oilPrintError();
         exit(EXIT_FAILURE);
@@ -48,5 +45,3 @@ int main(int argc, char** argv)
     oilBMPFreeImage(dest);
     return 0;
 }
-
-#endif*/
