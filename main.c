@@ -12,35 +12,37 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 24, BITMAPINFOHEADER);
+    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 16, BITMAPCOREHEADER);
     oilGrFill(dest->colorMatrix, ocolor(0, 0, 0, 0));
     oilColorMatrixCopy(src->colorMatrix, dest->colorMatrix);
 
     //dest->colorMatrix = src->colorMatrix;
 
 
+/*
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
             oilColor color = oilGrGetPixel(src->colorMatrix, x, y);
-            oilPrintColor(&color, 1);
+            //oilPrintColor(&color, 1);
         }
         putchar('\n');
     }
+*/
 
     if(!oilBMPSave(dest, "image.bmp"))
     {
         oilPrintError();
     }
-    putchar('\n');
+  /*  putchar('\n');
 
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
             oilColor color = oilGrGetPixel(dest->colorMatrix, x, y);
-            oilPrintColor(&color, 1);
+            //oilPrintColor(&color, 1);
         }
         putchar('\n');
     }
-
+*/
     oilPNGFreeImage(src);
     oilBMPFreeImage(dest);
     return 0;

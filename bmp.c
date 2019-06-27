@@ -8,9 +8,9 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 {
     bmpImage* image = malloc(sizeof(bmpImage));
     image->fileHeader = malloc(sizeof(bmpFileHeader));
-    image->fileHeader->signature = signature;
-    image->fileHeader->reserved1 = 0;
-    image->fileHeader->reserved2 = 0;
+    image->fileHeader->bfType = signature;
+    image->fileHeader->bfReserved1 = 0;
+    image->fileHeader->bfReserved2 = 0;
 
     image->imageData = malloc(sizeof(bmpImageData));
     image->imageData->headerType = type;
@@ -22,8 +22,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpCoreHeader));
             bmpCoreHeader* header = image->imageData->header;
-            header->headerSize = (uint32_t)bmpCoreHeaderSize;
-            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpCoreHeaderSize);
+            header->bcSize = (uint32_t)bmpCoreHeaderSize;
+            image->fileHeader->bfOffBits = (uint32_t)(bmpFileHeaderSize + bmpCoreHeaderSize);
             break;
         }
 
@@ -31,8 +31,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpInfoHeader));
             bmpInfoHeader* header = image->imageData->header;
-            header->headerSize = (uint32_t)bmpInfoHeaderSize;
-            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpInfoHeaderSize);
+            header->biSize = (uint32_t)bmpInfoHeaderSize;
+            image->fileHeader->bfOffBits = (uint32_t)(bmpFileHeaderSize + bmpInfoHeaderSize);
             break;
         }
 
@@ -40,8 +40,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpV4Header));
             bmpV4Header* header = image->imageData->header;
-            header->headerSize = (uint32_t)bmpV4HeaderSize;
-            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpV4HeaderSize);
+            header->bV4Size = (uint32_t)bmpV4HeaderSize;
+            image->fileHeader->bfOffBits  = (uint32_t)(bmpFileHeaderSize + bmpV4HeaderSize);
             break;
         }
 
@@ -49,8 +49,8 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
         {
             image->imageData->header = malloc(sizeof(bmpV5Header));
             bmpV5Header* header = image->imageData->header;
-            header->headerSize = (uint32_t)bmpV5HeaderSize;
-            image->fileHeader->offsetBytes = (uint32_t)(bmpFileHeaderSize + bmpV5HeaderSize);
+            header->bV5Size = (uint32_t)bmpV5HeaderSize;
+            image->fileHeader->bfOffBits  = (uint32_t)(bmpFileHeaderSize + bmpV5HeaderSize);
             break;
         }
     }
@@ -93,7 +93,7 @@ bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDept
 
     uint32_t toPad = (4 - (width * 3) % 4) % 4;
     uint32_t imageSize = (width * height) * 3 * bitDepth / 24 + (width)* toPad;
-    image->fileHeader->fileSize = image->fileHeader->offsetBytes  + imageSize;
+    image->fileHeader->bfSize = image->fileHeader->bfOffBits + imageSize;
 
     switch(headerType)
     {
@@ -101,30 +101,29 @@ bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDept
         default:
         {
             bmpCoreHeader* header = image->imageData->header;
-            header->width = (uint16_t)width;
-            header->height = (uint16_t)height;
-            header->bitDepth = bitDepth;
-            header->planes = 0;
+            header->bcWidth = (uint16_t)width;
+            header->bcHeight = (uint16_t)height;
+            header->bcBitCount = bitDepth;
+            header->bcPlanes = 0;
             break;
         }
 
         case BITMAPINFOHEADER:
         {
             bmpInfoHeader* header = image->imageData->header;
-            header->imageSize = imageSize;
+            header->biSizeImage = imageSize;
 
-            header->width = width;
-            header->height = height;
+            header->biWidth = width;
+            header->biHeight = height;
 
-            header->bitDepth = bitDepth;
-            header->compression = bmp_compression_rgb;
-            header->colorsImportant = 0;
-            header->planes = 1;
-            header->XpelsPerMeter = 2835;
-            header->YpelsPerMeter = 2835;
+            header->biBitCount = bitDepth;
+            header->biCompression = bmp_compression_rgb;
+            header->biPlanes = 1;
+            header->biXPelsPerMeter = 2835;
+            header->biYPelsPerMeter = 2835;
 
-            header->colorsImportant = 0;
-            header->colorsUsed = 0;
+            header->biClrImportant = 0;
+            header->biClrUsed = 0;
             break;
         }
 
@@ -168,11 +167,11 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
         return 0;
     }
 
-    writeData(image->fileHeader->signature,   "fileHeader: signature");
-    writeData(image->fileHeader->fileSize,    "fileHeader: fileSize");
-    writeData(image->fileHeader->reserved1,   "fileHeader: reserved1");
-    writeData(image->fileHeader->reserved2,   "fileHeader: reserved2");
-    writeData(image->fileHeader->offsetBytes, "fileHeader: offsetBytes");
+    writeData(image->fileHeader->bfType,        "fileHeader: signature");
+    writeData(image->fileHeader->bfSize,        "fileHeader: fileSize");
+    writeData(image->fileHeader->bfReserved1,   "fileHeader: reserved1");
+    writeData(image->fileHeader->bfReserved2,   "fileHeader: reserved2");
+    writeData(image->fileHeader->bfOffBits,     "fileHeader: offsetBytes");
     uint16_t bitDepth = 0;
 
     switch(image->imageData->headerType)
@@ -181,29 +180,29 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
         default:
         {
             bmpCoreHeader* header = image->imageData->header;
-            writeData(header->headerSize,       "infoHeader : headerSize");
-            writeData(header->width,            "infoHeader : width");
-            writeData(header->height,           "infoHeader : height");
-            writeData(header->planes,           "infoHeader : planes");
-            writeData(header->bitDepth,         "infoHeader : bitDepth");
-            bitDepth = header->bitDepth;
+            writeData(header->bcSize,        "infoHeader : headerSize");
+            writeData(header->bcWidth,       "infoHeader : width");
+            writeData(header->bcHeight,      "infoHeader : height");
+            writeData(header->bcPlanes,      "infoHeader : planes");
+            writeData(header->bcBitCount,    "infoHeader : bitDepth");
+            bitDepth = header->bcBitCount;
             break;
         }
         case BITMAPINFOHEADER:
         {
             bmpInfoHeader* header = image->imageData->header;
-            writeData(header->headerSize,      "infoHeader : headerSize");
-            writeData(image->width,            "infoHeader : width");
-            writeData(image->height,           "infoHeader : height");
-            writeData(header->planes,          "infoHeader : planes");
-            writeData(header->bitDepth,        "infoHeader : bitDepth");
-            writeData(header->compression,     "infoHeader : compression");
-            writeData(header->imageSize,       "infoHeader : imageSize");
-            writeData(header->XpelsPerMeter,   "infoHeader : XpelsPerMeter");
-            writeData(header->YpelsPerMeter,   "infoHeader : YpelsPerMeter");
-            writeData(header->colorsUsed,      "infoHeader : colorsUsed");
-            writeData(header->colorsImportant, "infoHeader : colorsImportant");
-            bitDepth = header->bitDepth;
+            writeData(header->biSize,           "infoHeader : headerSize");
+            writeData(header->biWidth,          "infoHeader : width");
+            writeData(header->biHeight,         "infoHeader : height");
+            writeData(header->biPlanes,         "infoHeader : planes");
+            writeData(header->biBitCount,       "infoHeader : bitDepth");
+            writeData(header->biCompression,    "infoHeader : compression");
+            writeData(header->biSizeImage,      "infoHeader : imageSize");
+            writeData(header->biXPelsPerMeter,  "infoHeader : XpelsPerMeter");
+            writeData(header->biYPelsPerMeter,  "infoHeader : YpelsPerMeter");
+            writeData(header->biClrUsed,        "infoHeader : colorsUsed");
+            writeData(header->biClrImportant,   "infoHeader : colorsImportant");
+            bitDepth = header->biBitCount;
             break;
         }
     }
