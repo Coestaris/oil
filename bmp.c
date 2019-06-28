@@ -72,6 +72,16 @@ bmpImage* oilBMPLoad(char* fileName)
 
 }
 
+void oilBMPCalcCT(bmpImage* image, uint8_t threshold, oilColor* colorTable)
+{
+
+}
+
+void oilBMPSetCT(bmpImage* image, oilColor* colorTable)
+{
+    image->imageData->colorTable = colorTable;
+}
+
 void oilBMPFreeImage(bmpImage* image)
 {
     if(image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
@@ -83,7 +93,15 @@ void oilBMPFreeImage(bmpImage* image)
 
 bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType)
 {
-    if(bitDepth != 8 && bitDepth != 16 && bitDepth != 24) {
+    uint8_t correctBitDepth = 0;
+    for(size_t i = 0; i < sizeof(allowedBMPBitDepth) / sizeof(allowedBMPBitDepth[0]); i++)
+        if(allowedBMPBitDepth[i] == bitDepth)
+        {
+            correctBitDepth = 1;
+            break;
+        }
+
+    if(!correctBitDepth) {
         oilPushErrorf("[OILERROR]: %i is wrong bitDepth value", bitDepth);
         return NULL;
     }

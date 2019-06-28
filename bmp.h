@@ -27,6 +27,16 @@ static uint32_t bmp_compression_cmyk            = 11;
 static uint32_t bmp_compression_cmyk_rle8       = 12;
 static uint32_t bmp_compression_cmyk_rle4       = 13;
 
+static uint8_t allowedBMPBitDepth[] = {
+        1,  //          2 possible colors (color table only)
+        2,  //          4 possible colors (color table only)
+        4,  //         16 possible colors (color table only)
+        8,  //        256 possible colors (color table only)
+        16, //      65536 possible colors (color table, 556 color model)
+        24, //   16777216 possible colors (color table, 888 color model)
+        32, // 4294967296 possible colors (color table, any color model)
+};
+
 typedef enum {
     BITMAPCOREHEADER,
     BITMAPINFOHEADER,
@@ -125,6 +135,8 @@ typedef struct {
     bmpHeaderType headerType;
     void* header;
 
+    oilColor* colorTable;
+
 } bmpImageData;
 
 typedef struct {
@@ -140,6 +152,9 @@ typedef struct {
 
 bmpImage* oilBMPCreateImage(uint16_t width, uint16_t height, uint16_t bitDepth);
 bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType);
+
+void oilBMPCalcCT(bmpImage* image, uint8_t threshold, oilColor* colorTable);
+void oilBMPSetCT(bmpImage* image, oilColor* colorTable);
 
 uint8_t oilBMPSave(bmpImage* image, char* fileName);
 //bmpImage* oilBMPLoad(char* filename);
