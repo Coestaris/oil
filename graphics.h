@@ -5,8 +5,12 @@
 #ifndef OIL_GRAPHICS_H
 #define OIL_GRAPHICS_H
 
-#include <GL/freeglut.h>
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
+
+#ifdef OIL_USE_GLUT
+#include <GL/freeglut.h>
+#endif
 
 #include "oilerror.h"
 #include "png.h"

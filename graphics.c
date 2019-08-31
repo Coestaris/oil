@@ -4,6 +4,14 @@
 
 #include "graphics.h"
 
+#ifndef OIL_USE_GLUT
+char* gluErrorString(GLenum error)
+{
+    //stub!
+    return "";
+}
+#endif
+
 void writeComponent(uint8_t* data, size_t* byteCounter, uint32_t dataFormat, uint16_t component)
 {
     switch(dataFormat)

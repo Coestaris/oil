@@ -1,3 +1,4 @@
+/*
 //
 // Created by maxim on 3/18/19.
 //
@@ -19,6 +20,7 @@ int main(int argc, char** argv)
     //dest->colorMatrix = src->colorMatrix;
 
 
+*/
 /*
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
@@ -27,13 +29,15 @@ int main(int argc, char** argv)
         }
         putchar('\n');
     }
-*/
+*//*
+
 
     if(!oilBMPSave(dest, "image.bmp"))
     {
         oilPrintError();
     }
-  /*  putchar('\n');
+  */
+/*  putchar('\n');
 
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
@@ -42,8 +46,9 @@ int main(int argc, char** argv)
         }
         putchar('\n');
     }
-*/
+*//*
+
     oilPNGFreeImage(src);
     oilBMPFreeImage(dest);
     return 0;
-}
+}*/
