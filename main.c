@@ -1,4 +1,3 @@
-/*
 //
 // Created by maxim on 3/18/19.
 //
@@ -13,42 +12,45 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 16, BITMAPCOREHEADER);
+    bmpImage* dest = oilBMPCreateImageExt(src->width, src->height, 24, BITMAPCOREHEADER);
+    if(dest == NULL)
+    {
+        oilPrintError();
+        exit(EXIT_FAILURE);
+    }
+
     oilGrFill(dest->colorMatrix, ocolor(0, 0, 0, 0));
     oilColorMatrixCopy(src->colorMatrix, dest->colorMatrix);
 
     //dest->colorMatrix = src->colorMatrix;
 
 
-*/
-/*
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
             oilColor color = oilGrGetPixel(src->colorMatrix, x, y);
             //oilPrintColor(&color, 1);
         }
-        putchar('\n');
+        //putchar('\n');
     }
-*//*
+
 
 
     if(!oilBMPSave(dest, "image.bmp"))
     {
         oilPrintError();
     }
-  */
-/*  putchar('\n');
+  putchar('\n');
 
     for(uint32_t y = 0; y < src->height; y++) {
         for(uint32_t x = 0; x < src->width; x++){
             oilColor color = oilGrGetPixel(dest->colorMatrix, x, y);
             //oilPrintColor(&color, 1);
         }
-        putchar('\n');
+        //putchar('\n');
     }
-*//*
+
 
     oilPNGFreeImage(src);
     oilBMPFreeImage(dest);
     return 0;
-}*/
+}

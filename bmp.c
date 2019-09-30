@@ -72,9 +72,9 @@ bmpImage* oilBMPLoad(char* fileName)
 
 }
 
-void oilBMPCalcCT(bmpImage* image, uint8_t threshold, oilColor* colorTable)
+void oilBMPCalcCT(bmpImage* image, uint32_t colorLen, oilColor* colorTable)
 {
-
+    //image->
 }
 
 void oilBMPSetCT(bmpImage* image, oilColor* colorTable)
@@ -105,6 +105,13 @@ bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDept
         oilPushErrorf("[OILERROR]: %i is wrong bitDepth value", bitDepth);
         return NULL;
     }
+
+    if(headerType == BITMAPCOREHEADER && (bitDepth != 1 && bitDepth != 4 && bitDepth != 8 && bitDepth != 24))
+    {
+        oilPushErrorf("[OILERROR]: %i is wrong bitDepth value for BITMAPCOREHEADER. Allowed values: 1, 4, 8, 24", bitDepth);
+        return NULL;
+    }
+
 
     bmpImage* image = allocImage(bmp_signature_bm, headerType);
     image->colorMatrix = oilColorMatrixAlloc(1, width, height);
@@ -227,8 +234,8 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
 
     int toPad = (4 - (image->width * 3) % 4) % 4;
 
-    uint8_t  paddingBytes1;
-    uint16_t paddingBytes2;
+    uint8_t  paddingBytes1 = 0;
+    uint16_t paddingBytes2 = 0;
 
     for(int32_t y = image->height - 1; y >= 0; y--)
     {
@@ -236,13 +243,20 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
         {
             switch (bitDepth)
             {
-                case 16:
-                    writeData(image->colorMatrix->matrix[y][x]->r, "colorComponent: r");
-                    writeData(image->colorMatrix->matrix[y][x]->g, "colorComponent: g");
-                    writeData(image->colorMatrix->matrix[y][x]->b, "colorComponent: b");
-                    break;
+                case 32:
+                {
+                    uint8_t r = (uint8_t) image->colorMatrix->matrix[y][x]->r;
+                    uint8_t g = (uint8_t) image->colorMatrix->matrix[y][x]->g;
+                    uint8_t b = (uint8_t) image->colorMatrix->matrix[y][x]->b;
+                    uint8_t a = (uint8_t) image->colorMatrix->matrix[y][x]->a;
 
-                case 8:
+                    writeData(b, "colorComponent: b");
+                    writeData(g, "colorComponent: g");
+                    writeData(r, "colorComponent: r");
+                    writeData(a, "colorComponent: a");
+                    break;
+                }
+                case 24:
                 default:
                 {
                     uint8_t r = (uint8_t)image->colorMatrix->matrix[y][x]->r;
@@ -255,6 +269,13 @@ uint8_t oilBMPSave(bmpImage* image, char* fileName)
 
                     break;
                 }
+                case 16:
+                case 8:
+                case 4:
+                case 2:
+                case 1:
+                    //colortable
+                    break;
             }
 
         }
