@@ -1,6 +1,7 @@
 //
 // Created by maxim on 3/18/19.
 //
+#ifdef OIL_MAIN
 #include "oil.h"
 
 int main(int argc, char** argv)
@@ -54,3 +55,4 @@ int main(int argc, char** argv)
     oilBMPFreeImage(dest);
     return 0;
 }
+#endif
