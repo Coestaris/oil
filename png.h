@@ -23,11 +23,11 @@
 //#define OILDEBUG_PRINT_SCANLINES
 
 static uint8_t png_signature[8] = {
-    0x89,             // Non ASCII symbol
-    0x50, 0x4E, 0x47, // "PNG"
-    0x0D, 0x0A,       // CRLF
-    0x1A,             // end-of-file symbol
-    0x0A              // LF
+        0x89,             // Non ASCII symbol
+        0x50, 0x4E, 0x47, // "PNG"
+        0x0D, 0x0A,       // CRLF
+        0x1A,             // end-of-file symbol
+        0x0A              // LF
 };
 
 static uint32_t png_chunk_IEND = 0x444E4549u; //[4] = { 0x49, 0x45, 0x4E, 0x44 };
@@ -55,88 +55,90 @@ static uint32_t png_chunk_iTXt = 0x74585469u; //[4] = { 0x69, 0x54, 0x58, 0x74 }
 
 typedef struct
 {
-    uint32_t length;
-    uint32_t type;
-    uint8_t* data;
-    uint32_t crc;
+   uint32_t length;
+   uint32_t type;
+   uint8_t* data;
+   uint32_t crc;
 
 } pngChunk;
 
 typedef struct
 {
-    uint16_t year;
-    uint8_t month;
-    uint8_t day;
-    uint8_t hour;
-    uint8_t minute;
-    uint8_t second;
+   uint16_t year;
+   uint8_t month;
+   uint8_t day;
+   uint8_t hour;
+   uint8_t minute;
+   uint8_t second;
 } pngTime;
 
 typedef struct
 {
-    char* key;
-    char* value;
+   char* key;
+   char* value;
 
 } pngText;
 
-typedef struct {
-    uint32_t whitePointX;
-    uint32_t whitePointY;
-    uint32_t redX;
-    uint32_t redY;
-    uint32_t greenX;
-    uint32_t greenY;
-    uint32_t blueX;
-    uint32_t blueY;
+typedef struct
+{
+   uint32_t whitePointX;
+   uint32_t whitePointY;
+   uint32_t redX;
+   uint32_t redY;
+   uint32_t greenX;
+   uint32_t greenY;
+   uint32_t blueX;
+   uint32_t blueY;
 } pngCIEInfo;
 
 typedef struct
 {
-    uint8_t bitDepth;
+   uint8_t bitDepth;
 
-    uint8_t colorFlag;
+   uint8_t colorFlag;
 
-    uint8_t usePalette;
-    uint8_t useColor;
-    uint8_t hasAlpha;
+   uint8_t usePalette;
+   uint8_t useColor;
+   uint8_t hasAlpha;
 
-    uint8_t gammaSet;
-    uint32_t gamma;
+   uint8_t gammaSet;
+   uint32_t gamma;
 
-    pngCIEInfo* cie;
-    oilColor* bkgColor;
+   pngCIEInfo* cie;
+   oilColor* bkgColor;
 
-    size_t paletteLen;
-    oilColor** palette;
+   size_t paletteLen;
+   oilColor** palette;
 
-    uint32_t ppuX;
-    uint32_t ppuY;
+   uint32_t ppuX;
+   uint32_t ppuY;
 
 } pngPixelData;
 
-typedef struct {
-    uint8_t compression;
-    uint8_t filtration;
-    uint8_t interlace;
+typedef struct
+{
+   uint8_t compression;
+   uint8_t filtration;
+   uint8_t interlace;
 
-    int txtItemsCount;
-    pngText* txtItems;
-    pngTime* time;
+   int txtItemsCount;
+   pngText* txtItems;
+   pngTime* time;
 
-    size_t rawDataLength;
-    uint8_t* rawData;
+   size_t rawDataLength;
+   uint8_t* rawData;
 
 } pngImageData;
 
 typedef struct
 {
-    pngPixelData* pixelsInfo;
-    pngImageData* imageData;
+   pngPixelData* pixelsInfo;
+   pngImageData* imageData;
 
-    uint32_t width;
-    uint32_t height;
+   uint32_t width;
+   uint32_t height;
 
-    colorMatrix* colorMatrix;
+   colorMatrix* colorMatrix;
 
 } pngImage;
 
@@ -153,8 +155,8 @@ typedef struct
 
 } zlib_header;*/
 
-pngImage* oilPNGLoad(char *fileName, int simplified);
-void oilPNGFreeImage(pngImage *image);
+pngImage* oilPNGLoad(char* fileName, int simplified);
+void oilPNGFreeImage(pngImage* image);
 
 #endif //OIL_PNG_H
 

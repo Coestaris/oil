@@ -6,6 +6,7 @@
 #define OIL_GRAPHICS_H
 
 #define GL_GLEXT_PROTOTYPES
+
 #include <GL/gl.h>
 
 #ifdef OIL_USE_GLUT
@@ -18,13 +19,14 @@
 
 #define OIL_GRAPHICS_CLIP_CHECKING
 
-typedef struct _imageData {
-    colorMatrix* srcMatrix;
-    uint8_t* data;
-    size_t dataLen;
+typedef struct _imageData
+{
+   colorMatrix* srcMatrix;
+   uint8_t* data;
+   size_t dataLen;
 
-    uint32_t componentFormat;
-    uint32_t dataFormat;
+   uint32_t componentFormat;
+   uint32_t dataFormat;
 
 } imageData;
 
@@ -46,27 +48,28 @@ typedef struct _imageData {
 #define OIL_TEX_FLIPX           32UL
 #define OIL_TEX_FLIPY           64UL
 
-typedef struct _texData {
-    GLenum magFilter;
-    GLenum minFilter;
-    GLenum dataFormat;
-    GLenum wrappingMode;
-    float* borderColor;
-    uint8_t flipX;
-    uint8_t flipY;
+typedef struct _texData
+{
+   GLenum magFilter;
+   GLenum minFilter;
+   GLenum dataFormat;
+   GLenum wrappingMode;
+   float* borderColor;
+   uint8_t flipX;
+   uint8_t flipY;
 
-    uint32_t out_width;
-    uint32_t out_height;
+   uint32_t out_width;
+   uint32_t out_height;
 
 } texData;
 
-GLuint oilTextureFromPngFileDef(char *filename, uint32_t componentFormat);
-GLuint oilTextureFromPngFile(char *filename, uint32_t componentFormat, uint32_t flags, texData* data);
+GLuint oilTextureFromPngFileDef(char* filename, uint32_t componentFormat);
+GLuint oilTextureFromPngFile(char* filename, uint32_t componentFormat, uint32_t flags, texData* data);
 
 GLuint oilGetTexture(imageData* img, GLenum wrapping, GLenum magFilter, GLenum minFilter, float* borderColor);
 void oilFreeImageData(imageData* data);
 
-imageData* oilGetPNGImageData(pngImage *img, uint32_t componentFormat, uint32_t dataFormat);
+imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t dataFormat);
 
 void oilGrFlipX(colorMatrix* matrix);
 void oilGrFlipY(colorMatrix* matrix);
