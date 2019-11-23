@@ -477,6 +477,7 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
    }
 
    pngChunk* chunk = malloc(sizeof(pngChunk));
+   chunk->data = NULL;
    *image = oilCreateImg();
 
    while (1)
@@ -499,6 +500,8 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
 
       if (chunk->length != 0)
       {
+         if(chunk->data) free(chunk->data);
+
          chunk->data = malloc(sizeof(uint8_t) * chunk->length);
          if (fread(chunk->data, sizeof(uint8_t) * chunk->length, 1, f) != 1)
          {
