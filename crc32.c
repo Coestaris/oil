@@ -15,7 +15,7 @@ uint32_t CRC32(uint8_t* buff, size_t buffLen, uint32_t init)
    return crc;
 }
 
-uint32_t updateCRC32(uint8_t ch, uint32_t crc)
+inline uint32_t updateCRC32(uint8_t ch, uint32_t crc)
 {
    uint32_t idx = ((crc) ^ (ch)) & 0xff;
    uint32_t tab_value = crc_32_tab[idx];
