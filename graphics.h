@@ -5,6 +5,8 @@
 #ifndef OIL_GRAPHICS_H
 #define OIL_GRAPHICS_H
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCInconsistentNamingInspection"
 #define GL_GLEXT_PROTOTYPES
 
 #include <GL/gl.h>
@@ -13,6 +15,7 @@
 #include <GL/freeglut.h>
 #endif
 
+#include <stdlib.h>
 #include "oilerror.h"
 #include "png.h"
 #include "assert.h"
@@ -74,7 +77,13 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
 void oilGrFlipX(colorMatrix* matrix);
 void oilGrFlipY(colorMatrix* matrix);
 void oilGrFill(colorMatrix* matrix, oilColor color);
+void oilGrFillValue(colorMatrix* matrix, uint32_t value);
+void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color);
+void oilGrDrawCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
+void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
 void oilGrSetPixel(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color);
 oilColor oilGrGetPixel(colorMatrix* matrix, uint32_t x, uint32_t y);
 
+#pragma clang diagnostic pop
 #endif //OIL_GRAPHICS_H
+

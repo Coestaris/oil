@@ -354,6 +354,16 @@ GLuint oilTextureFromPngFile(char* filename, uint32_t componentFormat, uint32_t 
    return tex;
 }
 
+void oilGrFillValue(colorMatrix* matrix, uint32_t value)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+#endif
+
+   //todo
+   //memset(matrix->matrix, value, matrix->width * matrix->height * sizeof(oilColor));
+}
+
 void oilGrFill(colorMatrix* matrix, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
@@ -365,7 +375,7 @@ void oilGrFill(colorMatrix* matrix, oilColor color)
          *matrix->matrix[i][j] = color;
 }
 
-void oilGrSetPixel(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
+inline void oilGrSetPixel(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
    assert(matrix != NULL);
@@ -389,6 +399,10 @@ oilColor oilGrGetPixel(colorMatrix* matrix, uint32_t x, uint32_t y)
 
 void oilGrFlipX(colorMatrix* matrix)
 {
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+#endif
+
    for (uint32_t i = 0; i < matrix->height; i++)
       for (uint32_t j = 0; j < matrix->width / 2; j++)
       {
@@ -400,6 +414,10 @@ void oilGrFlipX(colorMatrix* matrix)
 
 void oilGrFlipY(colorMatrix* matrix)
 {
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+#endif
+
    for (uint32_t i = 0; i < matrix->height / 2; i++)
       for (uint32_t j = 0; j < matrix->width; j++)
       {
@@ -408,4 +426,112 @@ void oilGrFlipY(colorMatrix* matrix)
          matrix->matrix[matrix->height - i - 1][j] = tmp;
       }
 
+}
+
+void oilGrSetPixelNoBounds(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
+{
+   if(x < matrix->width && y < matrix->width)
+      *matrix->matrix[y][x] = color;
+}
+
+void oilGrDrawCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+   assert(center_x < matrix->width);
+   assert(center_y< matrix->height);
+#endif
+
+   int32_t x = 0;
+   int32_t y = radius;
+   int32_t delta = 1 - 2 * radius;
+   int32_t error = 0;
+   while (y >= 0)
+   {
+      oilGrSetPixelNoBounds(matrix, (int32_t)center_x + x, (int32_t)center_y + y, color);
+      oilGrSetPixelNoBounds(matrix, (int32_t)center_x + x, (int32_t)center_y - y, color);
+      oilGrSetPixelNoBounds(matrix, (int32_t)center_x - x, (int32_t)center_y + y, color);
+      oilGrSetPixelNoBounds(matrix, (int32_t)center_x - x, (int32_t)center_y - y, color);
+      error = 2 * (delta + y) - 1;
+      if ((delta < 0) && (error <= 0))
+      {
+         delta += 2 * ++x + 1;
+         continue;
+      }
+      if ((delta > 0) && (error > 0))
+      {
+         delta -= 2 * --y + 1;
+         continue;
+      }
+      delta += 2 * (++x - y--);
+   }
+}
+
+void oilGrDrawHLine(colorMatrix* matrix, uint32_t x1, uint32_t x2, uint32_t y, oilColor color)
+{
+   for(uint32_t x = x1; x <= x2; x++)
+      oilGrSetPixelNoBounds(matrix, x, y, color);
+}
+
+void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+   assert(center_x < matrix->width);
+   assert(center_y< matrix->height);
+#endif
+
+   int32_t x = 0;
+   int32_t y = radius;
+   int32_t delta = 1 - 2 * radius;
+   int32_t error = 0;
+   while (y >= 0)
+   {
+      oilGrDrawHLine(matrix, (int32_t)center_x - x,  (int32_t)center_x + x, (int32_t)center_y + y, color);
+      oilGrDrawHLine(matrix, (int32_t)center_x - x,  (int32_t)center_x + x, (int32_t)center_y - y, color);
+      error = 2 * (delta + y) - 1;
+      if ((delta < 0) && (error <= 0))
+      {
+         delta += 2 * ++x + 1;
+         continue;
+      }
+      if ((delta > 0) && (error > 0))
+      {
+         delta -= 2 * --y + 1;
+         continue;
+      }
+      delta += 2 * (++x - y--);
+   }
+}
+
+void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+   assert(x1 < matrix->width);
+   assert(y1 < matrix->height);
+   assert(x2 < matrix->width);
+   assert(y2 < matrix->height);
+#endif
+
+   int32_t deltax = abs((int32_t)x2 - (int32_t)x1);
+   int32_t deltay = abs((int32_t)y2 - (int32_t)y1);
+   int32_t error = 0;
+   int32_t deltaerr = (deltay + 1);
+   int32_t y = y1;
+
+   int32_t diry = (int32_t)y2 - (int32_t)y1;
+   if (diry > 0) diry = 1;
+   if (diry < 0) diry = -1;
+
+   for(int32_t x = x1; x < x2; x++)
+   {
+      oilGrSetPixelNoBounds(matrix, x, y, color);
+      error += deltaerr;
+      if(error >= (deltax + 1))
+      {
+         y += diry;
+         error -= (deltax + 1);
+      }
+   }
 }
