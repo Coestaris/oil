@@ -13,7 +13,7 @@
 
 typedef struct _oilFontChar
 {
-   void* data;
+   uint8_t* data;
    float width;
    float height;
    float bearing_x;

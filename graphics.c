@@ -529,3 +529,58 @@ void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, u
       }
    }
 }
+
+void oilGrDrawString(colorMatrix* matrix, oilFont* font, char* string, uint32_t x, uint32_t y, oilColor color)
+{
+   for(size_t i = 0; i < strlen(string); i++)
+   {
+      oilFontChar* ch = &font->fontChars[string[i]];
+
+      float xpos = x + ch->bearing_x;
+      float ypos = y - 2 * ch->height + ch->bearing_y;
+
+      //copy pixels
+      for(uint32_t px = 0; px < ch->width; px++)
+      for(uint32_t py = 0; py < ch->height; py++)
+      {
+         uint32_t newX = xpos + px;
+         uint32_t newY = ypos + py;
+
+         if(newX > matrix->width ||
+            newY > matrix->height)
+            continue;
+
+         oilColor old = *matrix->matrix[newY][newX];
+         float new = ((float)(ch->data[py * (uint32_t)ch->width + px]) / 255.0f);
+
+         //kinda shader
+         old.r = color.r * new + old.r * (1 - new);
+         old.g = color.g * new + old.g * (1 - new);
+         old.b = color.b * new + old.b * (1 - new);
+
+         oilGrSetPixelNoBounds(matrix, newX, newY, old);
+      }
+
+      x += ch->advance;
+   }
+}
+
+void oilGrDrawCenteredString(colorMatrix* matrix, oilFont* font, char* string, uint32_t x, uint32_t y, oilColor color)
+{
+   uint32_t stringWidth = 0;
+   uint32_t stringHeight = 0;
+   for(size_t i = 0; i < strlen(string); i++)
+   {
+      oilFontChar* ch = &font->fontChars[string[i]];
+      stringWidth += ch->advance;
+      stringHeight = stringWidth > ch->width ? stringHeight : ch->width;
+   }
+
+   oilGrDrawString(
+         matrix,
+         font,
+         string,
+         x - stringWidth / 2,
+         y + stringHeight / 2,
+         color);
+}

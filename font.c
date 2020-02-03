@@ -29,7 +29,7 @@ bool oilFontInit(void)
 void oilFontFree(oilFont* font)
 {
    for(uint8_t c = font->startIndex; c < font->endIndex; c++)
-      free(font->fontChars->data);
+      free(font->fontChars[c].data);
    free(font);
 }
 
@@ -59,6 +59,7 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
    }
 
    oilFont* font = malloc(sizeof(oilFont));
+   memset(font->fontChars, 0, sizeof(font->fontChars));
    font->endIndex = endIndex;
    font->startIndex = startIndex;
    for(uint8_t c = startIndex; c < endIndex; c++)
@@ -74,10 +75,10 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
       memcpy(font->fontChars[c].data, face->glyph->bitmap.buffer, len);
 
       font->fontChars[c].width = face->glyph->bitmap.width;
-      font->fontChars[c].width = face->glyph->bitmap.rows;
+      font->fontChars[c].height = face->glyph->bitmap.rows;
       font->fontChars[c].bearing_x = face->glyph->bitmap_left;
       font->fontChars[c].bearing_y = face->glyph->bitmap_top;
-      font->fontChars[c].advance = face->glyph->advance.x;
+      font->fontChars[c].advance = face->glyph->advance.x >> 6;
    }
 
    if((errorCode = FT_Done_Face(face)))
