@@ -77,7 +77,6 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
 void oilGrFlipX(colorMatrix* matrix);
 void oilGrFlipY(colorMatrix* matrix);
 void oilGrFill(colorMatrix* matrix, oilColor color);
-void oilGrFillValue(colorMatrix* matrix, uint32_t value);
 void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color);
 void oilGrDrawCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
 void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);

@@ -2,6 +2,7 @@
 // Created by maxim on 3/18/19.
 //
 
+#include <stdbool.h>
 #include "graphics.h"
 
 #ifndef OIL_USE_GLUT
@@ -354,16 +355,6 @@ GLuint oilTextureFromPngFile(char* filename, uint32_t componentFormat, uint32_t 
    return tex;
 }
 
-void oilGrFillValue(colorMatrix* matrix, uint32_t value)
-{
-#ifdef OIL_GRAPHICS_CLIP_CHECKING
-   assert(matrix != NULL);
-#endif
-
-   //todo
-   //memset(matrix->matrix, value, matrix->width * matrix->height * sizeof(oilColor));
-}
-
 void oilGrFill(colorMatrix* matrix, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
@@ -514,24 +505,27 @@ void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, u
    assert(y2 < matrix->height);
 #endif
 
-   int32_t deltax = abs((int32_t)x2 - (int32_t)x1);
-   int32_t deltay = abs((int32_t)y2 - (int32_t)y1);
-   int32_t error = 0;
-   int32_t deltaerr = (deltay + 1);
-   int32_t y = y1;
+   int32_t dx =  abs((int32_t)x2 - (int32_t)x1);
+   int32_t sx = x1 < x2 ? 1 : -1;
+   int32_t dy = -abs((int32_t)y2 - (int32_t)y1);
+   int32_t sy = y1 < y2 ? 1 : -1;
+   int32_t err = dx + dy;
 
-   int32_t diry = (int32_t)y2 - (int32_t)y1;
-   if (diry > 0) diry = 1;
-   if (diry < 0) diry = -1;
-
-   for(int32_t x = x1; x < x2; x++)
+   while (true)   /* loop */
    {
-      oilGrSetPixelNoBounds(matrix, x, y, color);
-      error += deltaerr;
-      if(error >= (deltax + 1))
+      oilGrSetPixelNoBounds(matrix, x1, y1, color);
+
+      if (x1 == x2 && y1 == y2) break;
+      int32_t e2 = err << 1; //*2
+      if (e2 >= dy)
       {
-         y += diry;
-         error -= (deltax + 1);
+         err += dy;
+         x1 += sx;
+      }
+      if (e2 <= dx)
+      {
+         err += dx;
+         y1 += sy;
       }
    }
 }
