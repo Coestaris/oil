@@ -114,7 +114,6 @@ bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDept
       return NULL;
    }
 
-
    bmpImage* image = allocImage(bmp_signature_bm, headerType);
    image->colorMatrix = oilColorMatrixAlloc(1, width, height);
 

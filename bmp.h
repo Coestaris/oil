@@ -161,8 +161,8 @@ typedef struct
 bmpImage* oilBMPCreateImage(uint16_t width, uint16_t height, uint16_t bitDepth);
 bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType);
 
-void oilBMPCalcCT(bmpImage* image, uint32_t colorLen, oilColor* colorTable);
-void oilBMPSetCT(bmpImage* image, oilColor* colorTable);
+//void oilBMPCalcCT(bmpImage* image, uint32_t colorLen, oilColor* colorTable);
+//void oilBMPSetCT(bmpImage* image, oilColor* colorTable);
 
 uint8_t oilBMPSave(bmpImage* image, char* fileName);
 //bmpImage* oilBMPLoad(char* filename);

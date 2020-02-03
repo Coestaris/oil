@@ -7,7 +7,7 @@ add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.
 
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} /usr/include/freetype2)
 
 target_link_libraries(oil m)
 target_link_libraries(oil z)
