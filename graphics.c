@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 #include "graphics.h"
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCInconsistentNamingInspection"
 
 #ifndef OIL_USE_GLUT
 
@@ -464,12 +466,18 @@ void oilGrDrawHLine(colorMatrix* matrix, uint32_t x1, uint32_t x2, uint32_t y, o
       oilGrSetPixelNoBounds(matrix, x, y, color);
 }
 
+void oilGrDrawVLine(colorMatrix* matrix, uint32_t y1, uint32_t y2, uint32_t x, oilColor color)
+{
+   for(uint32_t y = y1; y <= y2; y++)
+      oilGrSetPixelNoBounds(matrix, x, y, color);
+}
+
 void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
    assert(matrix != NULL);
    assert(center_x < matrix->width);
-   assert(center_y< matrix->height);
+   assert(center_y < matrix->height);
 #endif
 
    int32_t x = 0;
@@ -495,6 +503,71 @@ void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, 
    }
 }
 
+float max(float a, float b)
+{
+   return a > b ? a : b;
+}
+
+void oilGrSetAlphaPixelNoBounds(colorMatrix* matrix, uint32_t x, uint32_t y, float a, oilColor color)
+{
+   oilColor old = *matrix->matrix[y][x];
+   //kinda shader
+   old.r = (float)color.r * a + (float)old.r * (1 - a);
+   old.g = (float)color.g * a + (float)old.g * (1 - a);
+   old.b = (float)color.b * a + (float)old.b * (1 - a);
+   *matrix->matrix[y][x] = old;
+}
+
+void oilGrDrawCircleSm(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+   assert(center_x < matrix->width);
+   assert(center_y < matrix->height);
+#endif
+
+   float i = 0;
+   float j = radius;
+   float last_fade_amount = 0;
+   float fade_amount = 0;
+
+   while(i < j)
+   {
+      float height = sqrtf(max(radius * radius - i * i, 0));
+      fade_amount = ceilf(height) - height;
+
+      if(fade_amount < last_fade_amount)
+         j -= 1;
+      last_fade_amount = fade_amount;
+
+      float rfade_amount = 1.0f - fade_amount;
+      oilGrSetAlphaPixelNoBounds(matrix, i + center_x, j + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, i + center_x, j - 1 +  + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, -i + center_x, j + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, -i + center_x, j - 1 +  + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, i + center_x, -j + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, i + center_x, -j + 1 +  + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, -i + center_x, -j + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, -i + center_x, -j + 1 +  + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, j + center_x, i + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, j - 1 + center_x, i + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, -j + center_x, i + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, -j + 1 + center_x, i + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, j + center_x, -i + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, j - 1 + center_x, -i + center_y, fade_amount, color);
+
+      oilGrSetAlphaPixelNoBounds(matrix, -j + center_x, -i + center_y, rfade_amount, color);
+      oilGrSetAlphaPixelNoBounds(matrix, -j + 1 + center_x, -i + center_y, fade_amount, color);
+      i += 1;
+   }
+}
+
 void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color)
 {
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
@@ -505,13 +578,28 @@ void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, u
    assert(y2 < matrix->height);
 #endif
 
+   if(y1 == y2) {
+      uint32_t hi_x = x1 > x2 ? x1 : x2;
+      uint32_t lo_x = x1 > x2 ? x2 : x1;
+      oilGrDrawHLine(matrix, lo_x, hi_x, y1, color);
+      return;
+   }
+
+   if(x1 == x2) {
+      uint32_t hi_y = y1 > y2 ? y1 : y2;
+      uint32_t lo_y = y1 > y2 ? y2 : y1;
+      oilGrDrawVLine(matrix, lo_y, hi_y, x1, color);
+      return;
+   }
+
    int32_t dx =  abs((int32_t)x2 - (int32_t)x1);
    int32_t sx = x1 < x2 ? 1 : -1;
    int32_t dy = -abs((int32_t)y2 - (int32_t)y1);
    int32_t sy = y1 < y2 ? 1 : -1;
    int32_t err = dx + dy;
 
-   while (true)   /* loop */
+
+   while (true)
    {
       oilGrSetPixelNoBounds(matrix, x1, y1, color);
 
@@ -526,6 +614,118 @@ void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, u
       {
          err += dx;
          y1 += sy;
+      }
+   }
+}
+
+float oilGrIntPart(float f)
+{
+   return (float)(int32_t)f;
+}
+
+float oilGrFracPart(float f)
+{
+   return (float)f - (float)oilGrIntPart(f);
+}
+
+void oilSwap(uint32_t* p1, uint32_t* p2)
+{
+   uint32_t b = *p1;
+   *p1 = *p2;
+   *p2 = b;
+}
+
+void oilGrDrawLineSm(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color)
+{
+#ifdef OIL_GRAPHICS_CLIP_CHECKING
+   assert(matrix != NULL);
+   assert(x1 < matrix->width);
+   assert(y1 < matrix->height);
+   assert(x2 < matrix->width);
+   assert(y2 < matrix->height);
+#endif
+
+   if(y1 == y2) {
+      uint32_t hi_x = x1 > x2 ? x1 : x2;
+      uint32_t lo_x = x1 > x2 ? x2 : x1;
+      oilGrDrawHLine(matrix, lo_x, hi_x, y1, color);
+      return;
+   }
+
+   if(x1 == x2) {
+      uint32_t hi_y = y1 > y2 ? y1 : y2;
+      uint32_t lo_y = y1 > y2 ? y2 : y1;
+      oilGrDrawVLine(matrix, lo_y, hi_y, x1, color);
+      return;
+   }
+
+   float dx = (float)x2 - (float)x1;
+   float dy = (float)y2 - (float)y1;
+   if (fabsf(dx) > fabsf(dy))
+   {
+      if (x2 < x1)
+      {
+         oilSwap(&x1, &x2);
+         oilSwap(&y1, &y2);
+      }
+
+      float gradient = dy / dx;
+      float xend = oilGrIntPart(x1 + 0.5f);
+      float yend = y1 + gradient * (xend - x1);
+      float xgap = 1.0f - oilGrFracPart(x1 + 0.5f);
+      int32_t xpxl1 = xend;
+      int32_t ypxl1 = oilGrIntPart(yend);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl1, ypxl1, (1.0f - oilGrFracPart(yend)) * xgap, color);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl1, ypxl1 + 1, oilGrFracPart(yend) * xgap, color);
+      float intery = yend + gradient;
+
+      xend = oilGrIntPart(x2 + 0.5f);
+      yend = y2 + gradient * (xend - x2);
+      xgap = oilGrFracPart(x2 + 0.5f);
+      int32_t xpxl2 = xend;
+      int32_t ypxl2 = oilGrIntPart(yend);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl2, ypxl2, (1.0f - oilGrFracPart(yend)) * xgap, color);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl2, ypxl2 + 1, oilGrFracPart(yend) * xgap, color);
+
+      int32_t x;
+      for(x=xpxl1+1; x < xpxl2; x++)
+      {
+         oilGrSetAlphaPixelNoBounds(matrix, x, oilGrIntPart(intery), (1.0f - oilGrFracPart(intery)), color);
+         oilGrSetAlphaPixelNoBounds(matrix, x, oilGrIntPart(intery) + 1, oilGrFracPart(intery), color);
+         intery += gradient;
+      }
+   }
+   else
+   {
+      if (y2 < y1)
+      {
+         oilSwap(&x1, &x2);
+         oilSwap(&y1, &y2);
+      }
+      float gradient = dx / dy;
+      float yend = oilGrIntPart(y1 + 0.5f);
+      float xend = x1 + gradient*(yend - y1);
+      float ygap = 1.0f - oilGrFracPart(y1 + 0.5f);
+      int32_t ypxl1 = yend;
+      int32_t xpxl1 = oilGrIntPart(xend);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl1, ypxl1, (1.0f - oilGrFracPart(xend)) * ygap, color);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl1 + 1, ypxl1, oilGrFracPart(xend) * ygap, color);
+      float interx = xend + gradient;
+
+      yend = oilGrIntPart(y2 + 0.5f);
+      xend = x2 + gradient*(yend - y2);
+      ygap = oilGrFracPart(y2 + 0.5f);
+      int32_t ypxl2 = yend;
+      int32_t xpxl2 = oilGrIntPart(xend);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl2, ypxl2, (1.0f - oilGrFracPart(xend)) * ygap, color);
+      oilGrSetAlphaPixelNoBounds(matrix, xpxl2 + 1, ypxl2, oilGrFracPart(xend) * ygap, color);
+
+      int32_t y;
+      for(y = ypxl1 + 1; y < ypxl2; y++)
+      {
+         oilGrSetAlphaPixelNoBounds(matrix, oilGrIntPart(interx), y, (1.0f - oilGrFracPart(interx)), color);
+         oilGrSetAlphaPixelNoBounds(matrix, oilGrIntPart(interx) + 1, y, oilGrFracPart(interx), color);
+         interx += gradient;
       }
    }
 }
@@ -550,15 +750,8 @@ void oilGrDrawString(colorMatrix* matrix, oilFont* font, char* string, uint32_t 
             newY > matrix->height)
             continue;
 
-         oilColor old = *matrix->matrix[newY][newX];
          float new = ((float)(ch->data[py * (uint32_t)ch->width + px]) / 255.0f);
-
-         //kinda shader
-         old.r = color.r * new + old.r * (1 - new);
-         old.g = color.g * new + old.g * (1 - new);
-         old.b = color.b * new + old.b * (1 - new);
-
-         oilGrSetPixelNoBounds(matrix, newX, newY, old);
+         oilGrSetAlphaPixelNoBounds(matrix, newX, newY, new, color);
       }
 
       x += ch->advance;
@@ -584,3 +777,5 @@ void oilGrDrawCenteredString(colorMatrix* matrix, oilFont* font, char* string, u
          y + stringHeight / 2,
          color);
 }
+
+#pragma clang diagnostic pop

@@ -79,7 +79,11 @@ void oilGrFlipX(colorMatrix* matrix);
 void oilGrFlipY(colorMatrix* matrix);
 void oilGrFill(colorMatrix* matrix, oilColor color);
 void oilGrDrawLine(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color);
+void oilGrDrawLineSm(colorMatrix* matrix, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, oilColor color);
+
 void oilGrDrawCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
+void oilGrDrawCircleSm(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
+
 void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color);
 void oilGrDrawString(colorMatrix* matrix, oilFont* font, char* string, uint32_t x, uint32_t y, oilColor color);
 void oilGrDrawCenteredString(colorMatrix* matrix, oilFont* font, char* string, uint32_t x, uint32_t y, oilColor color);
