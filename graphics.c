@@ -421,10 +421,23 @@ void oilGrFlipY(colorMatrix* matrix)
 
 }
 
-void oilGrSetPixelNoBounds(colorMatrix* matrix, uint32_t x, uint32_t y, oilColor color)
-{
-   if(x < matrix->width && y < matrix->width)
-      *matrix->matrix[y][x] = color;
+#define oilGrSetPixelNoBounds(matrix, x, y, color) \
+{                                                  \
+   if(x < matrix->width && y < matrix->width)      \
+      *matrix->matrix[y][x] = color;               \
+}
+
+#define oilGrSetAlphaPixelNoBounds(matrix, x, y, a, color)                 \
+{                                                                          \
+   if((x) < matrix->width && (y) < matrix->height)                         \
+   {                                                                       \
+      oilColor old = *matrix->matrix[(uint32_t)(y)][(uint32_t)(x)];        \
+                                                                           \
+      old.r = (float)color.r * a + (float)old.r * (1 - a);                 \
+      old.g = (float)color.g * a + (float)old.g * (1 - a);                 \
+      old.b = (float)color.b * a + (float)old.b * (1 - a);                 \
+      *matrix->matrix[(uint32_t)(y)][(uint32_t)(x)] = old;                 \
+   }                                                                       \
 }
 
 void oilGrDrawCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
@@ -508,18 +521,9 @@ float max(float a, float b)
    return a > b ? a : b;
 }
 
-void oilGrSetAlphaPixelNoBounds(colorMatrix* matrix, uint32_t x, uint32_t y, float a, oilColor color)
-{
-   oilColor old = *matrix->matrix[y][x];
-   //kinda shader
-   old.r = (float)color.r * a + (float)old.r * (1 - a);
-   old.g = (float)color.g * a + (float)old.g * (1 - a);
-   old.b = (float)color.b * a + (float)old.b * (1 - a);
-   *matrix->matrix[y][x] = old;
-}
-
 void oilGrDrawCircleSm(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
 {
+
 #ifdef OIL_GRAPHICS_CLIP_CHECKING
    assert(matrix != NULL);
    assert(center_x < matrix->width);
