@@ -429,7 +429,7 @@ void oilGrFlipY(colorMatrix* matrix)
 
 #define oilGrSetAlphaPixelNoBounds(matrix, x, y, a, color)                 \
 {                                                                          \
-   if((x) < matrix->width && (y) < matrix->height)                         \
+   if(((uint32_t)x) < matrix->width && ((uint32_t)y) < matrix->height)     \
    {                                                                       \
       oilColor old = *matrix->matrix[(uint32_t)(y)][(uint32_t)(x)];        \
                                                                            \
