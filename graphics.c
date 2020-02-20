@@ -268,14 +268,14 @@ GLuint oilGetTexture(imageData* data, GLenum wrapping, GLenum magFilter, GLenum 
    }
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
-   checkGLError("Unable to set tex parameter (wrapping")
+   checkGLError("Unable to set tex parameter (wrapping)")
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapping);
-   checkGLError("Unable to set tex parameter (wrapping")
+   checkGLError("Unable to set tex parameter (wrapping)")
 
    if (wrapping == GL_CLAMP_TO_BORDER && borderColor)
    {
       glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-      checkGLError("Unable to set tex parameter (border color")
+      checkGLError("Unable to set tex parameter (border color)")
    }
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);

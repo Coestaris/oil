@@ -155,6 +155,7 @@ typedef struct
 
 } zlib_header;*/
 
+pngImage* oilCreateImg(void);
 pngImage* oilPNGLoad(char* fileName, int simplified);
 void oilPNGFreeImage(pngImage* image);
 
