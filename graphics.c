@@ -516,11 +516,6 @@ void oilGrFillCircle(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, 
    }
 }
 
-float max(float a, float b)
-{
-   return a > b ? a : b;
-}
-
 void oilGrDrawCircleSm(colorMatrix* matrix, uint32_t center_x, uint32_t center_y, uint32_t radius, oilColor color)
 {
 
@@ -537,7 +532,7 @@ void oilGrDrawCircleSm(colorMatrix* matrix, uint32_t center_x, uint32_t center_y
 
    while(i < j)
    {
-      float height = sqrtf(max(radius * radius - i * i, 0));
+      float height = sqrtf(fmax(radius * radius - i * i, 0));
       fade_amount = ceilf(height) - height;
 
       if(fade_amount < last_fade_amount)
