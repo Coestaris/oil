@@ -2,7 +2,7 @@
 
 zlib_header* getZlibHeader(uint8_t* data, size_t* offset)
 {
-    zlib_header* header = malloc(sizeof(zlib_header));
+    zlib_header* header = OIL_MALLOC(sizeof(zlib_header));
 
     header->compMethod = (uint8_t)(data[0] & 0b00001111);
     header->compInfo =   (uint8_t)(data[0] & 0b11110000) >> 4;

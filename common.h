@@ -5,8 +5,9 @@
 #ifndef OIL_COMMON_H
 #define OIL_COMMON_H
 
+#include "coredef.h"
+
 #include <stdint.h>
-#include <malloc.h>
 #include <string.h>
 
 #include "oilerror.h"

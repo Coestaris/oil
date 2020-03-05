@@ -3,6 +3,7 @@
 //
 
 #include "oilerror.h"
+#include "coredef.h"
 
 char* error;
 
@@ -16,7 +17,7 @@ void oilPrintError()
 
 void oilClearError(void)
 {
-   free(error);
+   OIL_FREE(error);
    error = NULL;
 }
 

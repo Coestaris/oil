@@ -3,16 +3,17 @@
 //
 
 #include "bmp.h"
+#include "coredef.h"
 
 bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 {
-   bmpImage* image = malloc(sizeof(bmpImage));
-   image->fileHeader = malloc(sizeof(bmpFileHeader));
+   bmpImage* image = OIL_MALLOC(sizeof(bmpImage));
+   image->fileHeader = OIL_MALLOC(sizeof(bmpFileHeader));
    image->fileHeader->bfType = signature;
    image->fileHeader->bfReserved1 = 0;
    image->fileHeader->bfReserved2 = 0;
 
-   image->imageData = malloc(sizeof(bmpImageData));
+   image->imageData = OIL_MALLOC(sizeof(bmpImageData));
    image->imageData->headerType = type;
 
    switch (type)
@@ -20,7 +21,7 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
       case BITMAPCOREHEADER:
       default:
       {
-         image->imageData->header = malloc(sizeof(bmpCoreHeader));
+         image->imageData->header = OIL_MALLOC(sizeof(bmpCoreHeader));
          bmpCoreHeader* header = image->imageData->header;
          header->bcSize = (uint32_t) bmpCoreHeaderSize;
          image->fileHeader->bfOffBits = (uint32_t) (bmpFileHeaderSize + bmpCoreHeaderSize);
@@ -29,7 +30,7 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 
       case BITMAPINFOHEADER:
       {
-         image->imageData->header = malloc(sizeof(bmpInfoHeader));
+         image->imageData->header = OIL_MALLOC(sizeof(bmpInfoHeader));
          bmpInfoHeader* header = image->imageData->header;
          header->biSize = (uint32_t) bmpInfoHeaderSize;
          image->fileHeader->bfOffBits = (uint32_t) (bmpFileHeaderSize + bmpInfoHeaderSize);
@@ -38,7 +39,7 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 
       case BITMAPV4HEADER:
       {
-         image->imageData->header = malloc(sizeof(bmpV4Header));
+         image->imageData->header = OIL_MALLOC(sizeof(bmpV4Header));
          bmpV4Header* header = image->imageData->header;
          header->bV4Size = (uint32_t) bmpV4HeaderSize;
          image->fileHeader->bfOffBits = (uint32_t) (bmpFileHeaderSize + bmpV4HeaderSize);
@@ -47,7 +48,7 @@ bmpImage* allocImage(uint16_t signature, bmpHeaderType type)
 
       case BITMAPV5HEADER:
       {
-         image->imageData->header = malloc(sizeof(bmpV5Header));
+         image->imageData->header = OIL_MALLOC(sizeof(bmpV5Header));
          bmpV5Header* header = image->imageData->header;
          header->bV5Size = (uint32_t) bmpV5HeaderSize;
          image->fileHeader->bfOffBits = (uint32_t) (bmpFileHeaderSize + bmpV5HeaderSize);
@@ -85,10 +86,10 @@ void oilBMPSetCT(bmpImage* image, oilColor* colorTable)
 void oilBMPFreeImage(bmpImage* image)
 {
    if (image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
-   free(image->imageData->header);
-   free(image->imageData);
-   free(image->fileHeader);
-   free(image);
+   OIL_FREE(image->imageData->header);
+   OIL_FREE(image->imageData);
+   OIL_FREE(image->fileHeader);
+   OIL_FREE(image);
 }
 
 bmpImage* oilBMPCreateImageExt(uint32_t width, uint32_t height, uint16_t bitDepth, bmpHeaderType headerType)

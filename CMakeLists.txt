@@ -3,11 +3,11 @@ project(oil C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.h graphics.c graphics.h main.c bmp.c bmp.h common.c common.h bmpSizes.h)
+add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.h graphics.c graphics.h main.c bmp.c bmp.h common.c common.h bmpSizes.h coredef.h)
 
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} /usr/include/freetype2)
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} /usr/include/OIL_FREEtype2)
 
 target_link_libraries(oil m)
 target_link_libraries(oil z)

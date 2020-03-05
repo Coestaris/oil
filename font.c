@@ -3,6 +3,7 @@
 //
 #include "font.h"
 #include "oilerror.h"
+#include "coredef.h"
 
 const char* FT_Error_String(FT_Error err) {
    #undef __FTERRORS_H__
@@ -29,8 +30,8 @@ bool oilFontInit(void)
 void oilFontFree(oilFont* font)
 {
    for(uint8_t c = font->startIndex; c < font->endIndex; c++)
-      free(font->fontChars[c].data);
-   free(font);
+      OIL_FREE(font->fontChars[c].data);
+   OIL_FREE(font);
 }
 
 oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex, uint8_t endIndex)
@@ -58,7 +59,7 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
       return NULL;
    }
 
-   oilFont* font = malloc(sizeof(oilFont));
+   oilFont* font = OIL_MALLOC(sizeof(oilFont));
    memset(font->fontChars, 0, sizeof(font->fontChars));
    font->endIndex = endIndex;
    font->startIndex = startIndex;
@@ -71,7 +72,7 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
       }
 
       size_t len = face->glyph->bitmap.width * face->glyph->bitmap.rows * sizeof(uint8_t);
-      font->fontChars[c].data = malloc(len);
+      font->fontChars[c].data = OIL_MALLOC(len);
       memcpy(font->fontChars[c].data, face->glyph->bitmap.buffer, len);
 
       font->fontChars[c].width = face->glyph->bitmap.width;
@@ -83,7 +84,7 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
 
    if((errorCode = FT_Done_Face(face)))
    {
-      oilPushErrorf("Couldn't free face. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
+      oilPushErrorf("Couldn't OIL_FREE face. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
       return NULL;
    }
    return font;
@@ -94,7 +95,7 @@ bool oilFontFin(void)
    FT_Error errorCode;
    if((errorCode = FT_Done_FreeType(ftLibrary)))
    {
-      oilPushErrorf("Couldn't free library. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
+      oilPushErrorf("Couldn't OIL_FREE library. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
       return false;
    }
    return true;

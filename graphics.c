@@ -122,7 +122,7 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
       return NULL;
    }
 
-   imageData* data = malloc(sizeof(imageData));
+   imageData* data = OIL_MALLOC(sizeof(imageData));
    data->srcMatrix = img->colorMatrix;
    data->componentFormat = componentFormat;
    data->dataFormat = dataFormat;
@@ -155,7 +155,7 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
             break;
          default:
             oilPushError("[OILERROR]: When using GL_AUTO bitdepth must be valid value\n");
-            free(data);
+            OIL_FREE(data);
             return NULL;
       }
    }
@@ -200,7 +200,7 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
    }
 
    data->dataLen = bytesPerPixel * img->width * img->height;
-   data->data = malloc(sizeof(uint8_t) * data->dataLen);
+   data->data = OIL_MALLOC(sizeof(uint8_t) * data->dataLen);
 
    size_t byteCounter = 0;
    for (uint32_t y = 0; y < img->height; y++)
@@ -216,8 +216,8 @@ imageData* oilGetPNGImageData(pngImage* img, uint32_t componentFormat, uint32_t 
 
 void oilFreeImageData(imageData* data)
 {
-   free(data->data);
-   free(data);
+   OIL_FREE(data->data);
+   OIL_FREE(data);
 }
 
 #define checkGLError(str)  if((error = glGetError()) != GL_NO_ERROR) \

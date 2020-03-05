@@ -6,12 +6,12 @@
 
 colorMatrix* oilColorMatrixAlloc(uint8_t allocColors, uint32_t width, uint32_t height)
 {
-   colorMatrix* matrix = malloc(sizeof(colorMatrix));
-   matrix->matrix = malloc(sizeof(oilColor**) * height);
+   colorMatrix* matrix = OIL_MALLOC(sizeof(colorMatrix));
+   matrix->matrix = OIL_MALLOC(sizeof(oilColor**) * height);
 
    for (uint32_t i = 0; i < height; i++)
    {
-      matrix->matrix[i] = malloc((sizeof(oilColor*) * width));
+      matrix->matrix[i] = OIL_MALLOC((sizeof(oilColor*) * width));
       if (allocColors)
       {
          for (uint32_t j = 0; j < width; j++)
@@ -31,11 +31,11 @@ void oilColorMatrixFree(colorMatrix* matrix)
    for (uint32_t i = 0; i < matrix->height; i++)
    {
       for (uint32_t j = 0; j < matrix->width; j++)
-         free(matrix->matrix[i][j]);
-      free(matrix->matrix[i]);
+         OIL_FREE(matrix->matrix[i][j]);
+      OIL_FREE(matrix->matrix[i]);
    }
-   free(matrix->matrix);
-   free(matrix);
+   OIL_FREE(matrix->matrix);
+   OIL_FREE(matrix);
 }
 
 
@@ -55,7 +55,7 @@ oilColor ocolor(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
 
 oilColor* ocolorp(uint16_t r, uint16_t g, uint16_t b, uint16_t a)
 {
-   oilColor* c = malloc(sizeof(oilColor));
+   oilColor* c = OIL_MALLOC(sizeof(oilColor));
    c->r = r;
    c->g = g;
    c->b = b;

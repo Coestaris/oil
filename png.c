@@ -22,8 +22,8 @@ uint16_t buffToU16(const uint8_t* buff)
 
 pngImage* oilCreateImg(void)
 {
-   pngImage* img = malloc(sizeof(pngImage));
-   img->pixelsInfo = malloc(sizeof(pngPixelData));
+   pngImage* img = OIL_MALLOC(sizeof(pngImage));
+   img->pixelsInfo = OIL_MALLOC(sizeof(pngPixelData));
    img->pixelsInfo->cie = NULL;
    img->pixelsInfo->bkgColor = NULL;
    img->pixelsInfo->ppuY = 0;
@@ -31,7 +31,7 @@ pngImage* oilCreateImg(void)
    img->pixelsInfo->gammaSet = 0;
    img->pixelsInfo->palette = NULL;
 
-   img->imageData = malloc(sizeof(pngImageData));
+   img->imageData = OIL_MALLOC(sizeof(pngImageData));
    img->imageData->txtItems = NULL;
    img->imageData->rawData = NULL;
    img->imageData->time = NULL;
@@ -42,7 +42,7 @@ pngImage* oilCreateImg(void)
 
 char* oilGetChunkName(pngChunk* chunk)
 {
-   char* str = malloc(5);
+   char* str = OIL_MALLOC(5);
    for (size_t i = 0; i < 4; i++)
    {
       str[i] = (char) ((chunk->type >> i * 8) & 0xFF);
@@ -179,7 +179,7 @@ int oilProceedIDAT(pngImage* image, uint8_t* data, size_t length)
    if (!image->imageData->rawData)
    {
       image->imageData->rawDataLength = length;
-      image->imageData->rawData = malloc(length);
+      image->imageData->rawData = OIL_MALLOC(length);
       memcpy(image->imageData->rawData, data, length);
    }
    else
@@ -212,7 +212,7 @@ uint8_t proceedImageData(pngImage* image)
    }
 
    size_t outputLen = bytesPerColor * image->width * image->height + image->height;
-   uint8_t* output = malloc(sizeof(uint8_t) * outputLen);
+   uint8_t* output = OIL_MALLOC(sizeof(uint8_t) * outputLen);
 
    z_stream infstream;
    infstream.zalloc = Z_NULL;
@@ -229,7 +229,7 @@ uint8_t proceedImageData(pngImage* image)
    int result;
    if ((result = inflate(&infstream, Z_NO_FLUSH)) != Z_OK)
    {
-      free(output);
+      OIL_FREE(output);
       oilPushErrorf("[OILERROR]: Unable to decompress data. ZLIB error: %s\n", zError(result));
       inflateEnd(&infstream);
       return 0;
@@ -280,7 +280,7 @@ uint8_t proceedImageData(pngImage* image)
             break;
 
          default:
-            free(output);
+            OIL_FREE(output);
             oilPushErrorf("[OILERROR]: %i is unknown filter type\n", filtType);
             return 0;
       }
@@ -288,7 +288,7 @@ uint8_t proceedImageData(pngImage* image)
       getImageColors(image, &byteCounter, output, i);
    }
 
-   free(output);
+   OIL_FREE(output);
    return 1;
 }
 
@@ -297,7 +297,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
 #ifdef OILDEBUG_PRINT_CHUNK_NAMES
    char *name = oilGetChunkName(chunk);
    printf("[OILDEBUG]: Reading chunk with type: %s\n", name);
-   free(name);
+   OIL_FREE(name);
 #endif
 
 #ifdef OIL_DONT_IGNORE_CHUNKS
@@ -332,7 +332,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
    else if (chunk->type == png_chunk_PLTE)
    {
       image->pixelsInfo->paletteLen = chunk->length / 3;
-      image->pixelsInfo->palette = malloc(sizeof(oilColor) * image->pixelsInfo->paletteLen);
+      image->pixelsInfo->palette = OIL_MALLOC(sizeof(oilColor) * image->pixelsInfo->paletteLen);
       for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
       {
          image->pixelsInfo->palette[i] = ocolorp(chunk->data[i * 3], chunk->data[i * 3 + 1], chunk->data[i * 3 + 2],
@@ -350,7 +350,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
    {
       if (simplified) return 1;
 
-      image->pixelsInfo->cie = malloc(sizeof(pngCIEInfo));
+      image->pixelsInfo->cie = OIL_MALLOC(sizeof(pngCIEInfo));
       image->pixelsInfo->cie->whitePointX = buffToU32(chunk->data);
       image->pixelsInfo->cie->whitePointY = buffToU32(chunk->data + 4);
       image->pixelsInfo->cie->redX = buffToU32(chunk->data + 8);
@@ -396,7 +396,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
 
       /*   if (image->text == NULL)
          {
-             image->text = malloc(chunk->length + 1);
+             image->text = OIL_MALLOC(chunk->length + 1);
              memcpy(image->text, chunk->data, chunk->length);
              image->text[chunk->length] = '\0';
          }
@@ -431,7 +431,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
    {
       if (simplified) return 1;
 
-      image->imageData->time = malloc(sizeof(pngTime));
+      image->imageData->time = OIL_MALLOC(sizeof(pngTime));
       image->imageData->time->year = buffToU16(chunk->data);
       image->imageData->time->month = chunk->data[2];
       image->imageData->time->day = chunk->data[3];
@@ -445,7 +445,7 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
       {
          char* chunkName = oilGetChunkName(chunk);
          oilPushErrorf("[OILERROR]: %i (or %s) is unknown chunk type\n", chunk->type, chunkName);
-         free(chunkName);
+         OIL_FREE(chunkName);
          return 0;
       }
    }
@@ -476,7 +476,7 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
       return 0;
    }
 
-   pngChunk* chunk = malloc(sizeof(pngChunk));
+   pngChunk* chunk = OIL_MALLOC(sizeof(pngChunk));
    chunk->data = NULL;
    *image = oilCreateImg();
 
@@ -485,7 +485,7 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
       if (fread(buff4, sizeof(buff4), 1, f) != 1)
       {
          oilPushErrorf("[OILERROR]: Unable to read chunk length at position %i\n", ftell(f));
-         free(chunk);
+         OIL_FREE(chunk);
          return 0;
       }
       chunk->length = buffToU32(buff4);
@@ -493,21 +493,21 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
       if (fread(&chunk->type, sizeof(chunk->type), 1, f) != 1)
       {
          oilPushErrorf("[OILERROR]: Unable to read chunk type at position %i\n", ftell(f));
-         free(chunk);
+         OIL_FREE(chunk);
          oilPNGFreeImage(*image);
          return 0;
       }
 
       if (chunk->length != 0)
       {
-         if(chunk->data) free(chunk->data);
+         if(chunk->data) OIL_FREE(chunk->data);
 
-         chunk->data = malloc(sizeof(uint8_t) * chunk->length);
+         chunk->data = OIL_MALLOC(sizeof(uint8_t) * chunk->length);
          if (fread(chunk->data, sizeof(uint8_t) * chunk->length, 1, f) != 1)
          {
             oilPushErrorf("[OILERROR]: Unable to read chunk data at position %i\n", ftell(f));
-            free(chunk->data);
-            free(chunk);
+            OIL_FREE(chunk->data);
+            OIL_FREE(chunk);
             oilPNGFreeImage(*image);
             return 0;
          }
@@ -516,8 +516,8 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
       if (fread(buff4, sizeof(buff4), 1, f) != 1)
       {
          oilPushErrorf("[OILERROR]: Unable to read chunk crc at position %i\n", ftell(f));
-         free(chunk->data);
-         free(chunk);
+         OIL_FREE(chunk->data);
+         OIL_FREE(chunk);
          oilPNGFreeImage(*image);
          return 0;
       }
@@ -531,8 +531,8 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
 
          oilPushErrorf("[OILERROR]: Chunks crcs doesn't match. Expected %X, but got %X\n", (uint32_t) chunk->crc,
                        (uint32_t) crc);
-         free(chunk->data);
-         free(chunk);
+         OIL_FREE(chunk->data);
+         OIL_FREE(chunk);
          oilPNGFreeImage(*image);
          return 0;
       }
@@ -545,26 +545,26 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
       if (!oilProceedChunk(*image, chunk, simplified))
       {
          oilPushError("[OILERROR]: Unable to proceed chunk\n");
-         free(chunk->data);
-         free(chunk);
+         OIL_FREE(chunk->data);
+         OIL_FREE(chunk);
          oilPNGFreeImage(*image);
          return 0;
       }
    }
 
 
-   free(chunk->data);
-   free(chunk);
+   OIL_FREE(chunk->data);
+   OIL_FREE(chunk);
 
    if (!proceedImageData(*image))
    {
       oilPushError("[OILERROR]: Unable to proceed chunk\n");
-      free((*image)->imageData->rawData);
+      OIL_FREE((*image)->imageData->rawData);
       oilPNGFreeImage(*image);
       return 0;
    }
 
-   free((*image)->imageData->rawData);
+   OIL_FREE((*image)->imageData->rawData);
 
    if (fclose(f))
    {
@@ -591,19 +591,19 @@ pngImage* oilPNGLoad(char* fileName, int simplified)
 void oilPNGFreeImage(pngImage* image)
 {
    if (image->colorMatrix) oilColorMatrixFree(image->colorMatrix);
-   if (image->pixelsInfo->cie) free(image->pixelsInfo->cie);
+   if (image->pixelsInfo->cie) OIL_FREE(image->pixelsInfo->cie);
    if (image->pixelsInfo->palette)
    {
       for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
-         free(image->pixelsInfo->palette[i]);
-      free(image->pixelsInfo->palette);
+         OIL_FREE(image->pixelsInfo->palette[i]);
+      OIL_FREE(image->pixelsInfo->palette);
    }
-   if (image->pixelsInfo->bkgColor) free(image->pixelsInfo->bkgColor);
-   free(image->pixelsInfo);
+   if (image->pixelsInfo->bkgColor) OIL_FREE(image->pixelsInfo->bkgColor);
+   OIL_FREE(image->pixelsInfo);
 
-   if (image->imageData->time) free(image->imageData->time);
-   if (image->imageData->txtItems) free(image->imageData->txtItems);
-   free(image->imageData);
+   if (image->imageData->time) OIL_FREE(image->imageData->time);
+   if (image->imageData->txtItems) OIL_FREE(image->imageData->txtItems);
+   OIL_FREE(image->imageData);
 
-   free(image);
+   OIL_FREE(image);
 }

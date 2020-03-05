@@ -12,7 +12,7 @@
 #include <GL/gl.h>
 
 #ifdef OIL_USE_GLUT
-#include <GL/freeglut.h>
+#include <GL/OIL_FREEglut.h>
 #endif
 
 #include <stdlib.h>
