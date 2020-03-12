@@ -84,7 +84,7 @@ oilFont* oilFontLoad(const char* fileName, uint32_t penSize, uint8_t startIndex,
 
    if((errorCode = FT_Done_Face(face)))
    {
-      oilPushErrorf("Couldn't OIL_FREE face. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
+      oilPushErrorf("Couldn't free face. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
       return NULL;
    }
    return font;
@@ -95,7 +95,7 @@ bool oilFontFin(void)
    FT_Error errorCode;
    if((errorCode = FT_Done_FreeType(ftLibrary)))
    {
-      oilPushErrorf("Couldn't OIL_FREE library. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
+      oilPushErrorf("Couldn't free library. Error: \"%s\" (Error code %i)", FT_Error_String(errorCode), errorCode);
       return false;
    }
    return true;

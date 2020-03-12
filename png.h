@@ -157,6 +157,7 @@ typedef struct
 
 pngImage* oilCreateImg(void);
 pngImage* oilPNGLoad(char* fileName, int simplified);
+pngImage* oilPNGLoadS(char* data, size_t length, int simplified);
 void oilPNGFreeImage(pngImage* image);
 
 #endif //OIL_PNG_H

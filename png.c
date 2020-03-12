@@ -60,7 +60,23 @@ void getImageColors(pngImage* image, size_t* byteCounter, uint8_t* data, size_t 
 
       if (image->pixelsInfo->usePalette)
       {
-         color = image->pixelsInfo->palette[png_get_next_byte];
+         uint8_t index = png_get_next_byte;
+         if(index >= image->pixelsInfo->paletteLen)
+         {
+            color->r = 0;
+            color->g = 0;
+            color->b = 0;
+            color->a = 0;
+            puts("MENSHE");
+         }
+         else
+         {
+            oilColor* paletteColor = image->pixelsInfo->palette[index];
+            color->r = paletteColor->r;
+            color->g = paletteColor->g;
+            color->b = paletteColor->b;
+            color->a = paletteColor->a;
+         }
       }
       else
       {
@@ -188,6 +204,7 @@ int oilProceedIDAT(pngImage* image, uint8_t* data, size_t length)
       memcpy(image->imageData->rawData + image->imageData->rawDataLength, data, length);
       image->imageData->rawDataLength += length;
    }
+   return 1;
 }
 
 uint8_t proceedImageData(pngImage* image)
@@ -335,8 +352,11 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
       image->pixelsInfo->palette = OIL_MALLOC(sizeof(oilColor) * image->pixelsInfo->paletteLen);
       for (size_t i = 0; i < image->pixelsInfo->paletteLen; i++)
       {
-         image->pixelsInfo->palette[i] = ocolorp(chunk->data[i * 3], chunk->data[i * 3 + 1], chunk->data[i * 3 + 2],
-                                                 0xFF);
+         image->pixelsInfo->palette[i] = ocolorp(
+               chunk->data[i * 3],
+               chunk->data[i * 3 + 1],
+               chunk->data[i * 3 + 2],
+               0xFF);
       }
    }
    else if (chunk->type == png_chunk_gAMA)
@@ -453,16 +473,8 @@ int oilProceedChunk(pngImage* image, pngChunk* chunk, int simplified)
    return 1;
 }
 
-int oilLoadImage(char* fileName, pngImage** image, int simplified)
+int oilLoadImage(FILE* f, pngImage** image, int simplified)
 {
-   FILE* f = fopen(fileName, "rb");
-
-   if (!f)
-   {
-      oilPushErrorf("[OILERROR]: Unable to open file \"%s\"\n", fileName);
-      return 0;
-   }
-
    //Reading and verifying pngImage signature
    uint8_t signBuffer[sizeof(png_signature)];
    if (fread(signBuffer, sizeof(signBuffer), 1, f) != 1)
@@ -575,17 +587,34 @@ int oilLoadImage(char* fileName, pngImage** image, int simplified)
    return 1;
 }
 
+pngImage* oilPNGLoadS(char* data, size_t length, int simplified)
+{
+   pngImage* img = NULL;
+
+   FILE* f = fmemopen(data, length, "rb");
+   if (!f)
+   {
+      oilPushError("[OILERROR]: Unable to open memstream\n");
+      return 0;
+   }
+
+   if (!oilLoadImage(f, &img, simplified)) return NULL;
+   else return img;
+}
+
 pngImage* oilPNGLoad(char* fileName, int simplified)
 {
    pngImage* img = NULL;
-   if (!oilLoadImage(fileName, &img, simplified))
+
+   FILE* f = fopen(fileName, "rb");
+   if (!f)
    {
-      return NULL;
+      oilPushErrorf("[OILERROR]: Unable to open file \"%s\"\n", fileName);
+      return 0;
    }
-   else
-   {
-      return img;
-   }
+
+   if (!oilLoadImage(f, &img, simplified)) return NULL;
+   else return img;
 }
 
 void oilPNGFreeImage(pngImage* image)
