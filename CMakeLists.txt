@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(oil C)
 
+add_compile_definitions(OIL_MAIN)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(oil main.c oil.h png.c png.h oilerror.c oilerror.h crc32.c crc32.h graphics.c graphics.h main.c bmp.c bmp.h common.c common.h bmpSizes.h coredef.h)
