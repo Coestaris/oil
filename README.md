@@ -3,7 +3,7 @@
 **OpenGL Image Library** is a small C library for loading images and working with pixels and textures. It was written for Zomboid2.0 and other projects, including Raytracer.
 
 - `png.h` exposes PNG loading from a file or a memory buffer.
-- `bmp.h` exposes bitmap creation, loading, and saving.
+- `bmp.h` exposes bitmap creation and saving.
 - `graphics.h` contains pixel access, drawing primitives, and OpenGL texture helpers. Texture uploads require a current OpenGL context.
 
 ## Build and run the conversion demo
